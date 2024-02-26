@@ -1,0 +1,1446 @@
+{
+    "panel": {
+        "Advanced": [
+            "ignoreGravity",
+            "ignoreMass",
+            "collideWithParent",
+            "angularMass",
+            "centerOfMass",
+            "airDensity",
+            "linearDamping",
+            "angularDamping",
+            "positionIterations",
+            "velocityIterations",
+            "wakeCounter",
+            "maxContactImpulse",
+            "maxDepenetrationVelocity",
+            "inputGeometryQuantisedCount",
+            "inputGeometryCheckZeroAreaTriangles",
+            "",
+            "contactStiffness",
+            "contactDamping",
+            "drawDrive"
+        ],
+        "Advanced Pose": [
+            "driveInterpolation",
+            "driveSpringType",
+            "driveAngularAmountTwist",
+            "driveAngularAmountSwing"
+        ],
+        "Behaviour": [
+            "enabled",
+            "export",
+            "inputType",
+            "linearMotion",
+            "linearStiffness",
+            "linearDampingRatio",
+            "angularStiffness",
+            "angularDampingRatio"
+        ],
+        "Display": [
+            "displayType",
+            "color",
+            "drawScale",
+            "drawLimit"
+        ],
+        "Level of Detail": [],
+        "Limit": [
+            "limitStiffness",
+            "limitDampingRatio",
+            "limitRange"
+        ],
+        "Material": [
+            "collide",
+            "mass",
+            "density",
+            "friction",
+            "restitution",
+            "thickness",
+            "collisionGroup"
+        ],
+        "Record": [
+            "recordTranslation",
+            "recordRotation"
+        ],
+        "Shape": [
+            "shapeType",
+            "shapeExtents",
+            "shapeLength",
+            "shapeRadius",
+            "shapeRadiusEnd",
+            "shapeOffset",
+            "shapeRotation",
+            "shapeVertexLimit",
+            "inputGeometry"
+        ],
+        "__expand__": [
+            "Behaviour"
+        ],
+        "__order__": [
+            "Behaviour",
+            "Record",
+            "Material",
+            "Shape",
+            "Limit",
+            "Advanced Pose",
+            "Level of Detail",
+            "Display",
+            "Advanced"
+        ]
+    },
+    "property": {
+        "airDensity": {
+            "affects": [],
+            "help": "",
+            "label": "Air Density",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "angularDamping": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularDampingRatio": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularMass": {
+            "affects": [],
+            "help": "",
+            "label": "Rotation Mass",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    -1.0,
+                    -1.0,
+                    -1.0
+                ],
+                "subtype": "VELOCITY",
+                "type": "double[3]"
+            }
+        },
+        "angularStiffness": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "centerOfMass": {
+            "affects": [],
+            "help": "",
+            "label": "Center Of Mass",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "XYZ",
+                "type": "double[3]"
+            }
+        },
+        "childFrame": {
+            "affects": [],
+            "help": "",
+            "label": "Child Frame",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "collide": {
+            "affects": [],
+            "help": "",
+            "label": "Collide",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "collideWithParent": {
+            "affects": [],
+            "help": "",
+            "label": "Collide With Parent",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        },
+        "collisionGroup": {
+            "affects": [],
+            "help": "",
+            "label": "Overlap Group",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "max": 255,
+                "min": -1,
+                "type": "int"
+            }
+        },
+        "color": {
+            "affects": [],
+            "help": "",
+            "label": "Color",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.5,
+                    0.5,
+                    0.5
+                ],
+                "max": 1,
+                "min": 0,
+                "subtype": "COLOR",
+                "type": "color"
+            }
+        },
+        "contactDamping": {
+            "affects": [],
+            "help": "",
+            "label": "Contact Damping",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "contactStiffness": {
+            "affects": [],
+            "help": "",
+            "label": "Contact Stiffness",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "density": {
+            "affects": [],
+            "help": "",
+            "label": "Density",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "displayType": {
+            "affects": [],
+            "help": "",
+            "label": "Display Type",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        -1,
+                        "Off"
+                    ],
+                    [
+                        0,
+                        "Default"
+                    ],
+                    [
+                        1,
+                        "Wire"
+                    ],
+                    [
+                        2,
+                        "Constant"
+                    ],
+                    [
+                        3,
+                        "Shaded"
+                    ],
+                    [
+                        4,
+                        "Mass"
+                    ],
+                    [
+                        5,
+                        "Friction"
+                    ],
+                    [
+                        6,
+                        "Restitution"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "drawDrive": {
+            "affects": [],
+            "help": "",
+            "label": "Draw Pose",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "drawLimit": {
+            "affects": [],
+            "help": "",
+            "label": "Draw Limit",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "drawScale": {
+            "affects": [],
+            "help": "",
+            "label": "Draw Scale",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "type": "double"
+            }
+        },
+        "driveAngularAmountSwing": {
+            "abbr": "daas",
+            "affects": [],
+            "help": "",
+            "label": "Rotate Swing Amount",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "max": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "driveAngularAmountTwist": {
+            "abbr": "daat",
+            "affects": [],
+            "help": "",
+            "label": "Rotate Twist Amount",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "max": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "driveInterpolation": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Interpolation",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        0,
+                        "Twist & Swing"
+                    ],
+                    [
+                        1,
+                        "Spherical Linear Interpolation"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "driveLinearAmount": {
+            "abbr": "dlam",
+            "affects": [],
+            "help": "",
+            "label": "World Pose Translate XYZ",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "min": 0.0,
+                "subtype": "XYZ",
+                "type": "float[3]"
+            }
+        },
+        "driveSpringType": {
+            "affects": [],
+            "help": "",
+            "label": "Spring Type",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1,
+                "items": [
+                    [
+                        0,
+                        "Force"
+                    ],
+                    [
+                        1,
+                        "Acceleration"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "enabled": {
+            "affects": [],
+            "help": "",
+            "label": "Enabled",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "export": {
+            "affects": [],
+            "help": "",
+            "label": "Export",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "friction": {
+            "affects": [],
+            "help": "",
+            "label": "Friction",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.6,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "ignoreFields": {
+            "affects": [],
+            "help": "",
+            "label": "Ignore Fields",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        },
+        "ignoreGravity": {
+            "affects": [],
+            "help": "",
+            "label": "Ignore Gravity",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        },
+        "ignoreMass": {
+            "affects": [],
+            "help": "",
+            "label": "Ignore Mass",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        },
+        "inputGeometry": {
+            "affects": [],
+            "help": "",
+            "label": "Custom Mesh Shape",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "pointer",
+                "subtype": "MESH"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 4
+                }
+            ]
+        },
+        "inputGeometryCheckZeroAreaTriangles": {
+            "affects": [],
+            "help": "",
+            "label": "Check Zero Area Triangles",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "inputGeometryMatrix": {
+            "affects": [],
+            "help": "",
+            "label": "Input Geometry Matrix",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "inputGeometryQuantisedCount": {
+            "affects": [],
+            "help": "",
+            "label": "Geometry Quantised Count",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 65535,
+                "max": 65535,
+                "min": 0,
+                "type": "int"
+            }
+        },
+        "sourceTransform": {
+            "affects": [],
+            "help": "Source of world matrix for this node",
+            "label": "Source Transform",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "pointer"
+            }
+        },
+        "destinationTransforms": {
+            "affects": [],
+            "help": "Keyframes will be recorded onto here",
+            "label": "Destination Transforms",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "pointer[]"
+            }
+        },
+        "inputType": {
+            "affects": [],
+            "help": "",
+            "label": "Behaviour",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        0,
+                        "Use Group"
+                    ],
+                    [
+                        2,
+                        "Animated"
+                    ],
+                    [
+                        3,
+                        "Simulated"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "limitDampingRatio": {
+            "abbr": "ldra",
+            "affects": [],
+            "help": "",
+            "label": "Limit Damping",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "limitRange": {
+            "affects": [],
+            "help": "",
+            "label": "Limit Range",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "max": 1.571,
+                "min": -0.0174,
+                "subtype": "EULER",
+                "type": "angle[3]"
+            }
+        },
+        "limitStiffness": {
+            "abbr": "list",
+            "affects": [],
+            "help": "",
+            "label": "Limit Stiffness",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "linearDamping": {
+            "affects": [],
+            "help": "",
+            "label": "Translate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.5,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "linearMotion": {
+            "abbr": "limo",
+            "affects": [],
+            "help": "",
+            "label": "Translate Motion",
+            "options": {
+                "monitor": true,
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": -1,
+                "items": [
+                    [
+                        -1,
+                        "Use Group"
+                    ],
+                    [
+                        0,
+                        "Locked"
+                    ],
+                    [
+                        2,
+                        "Soft"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "linearStiffness": {
+            "affects": [],
+            "help": "",
+            "label": "Translate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "linearMotion",
+                    "equal": 2
+                }
+            ]
+        },
+        "linearDampingRatio": {
+            "affects": [],
+            "help": "",
+            "label": "Translate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "linearMotion",
+                    "equal": 2
+                }
+            ]
+        },
+        "influence": {
+            "affects": [],
+            "help": "In regards to angular and linear stiffness, this property controls the effect the parent has over the child",
+            "label": "Influence",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.5,
+                "min": 0.0,
+                "max": 1.0,
+                "type": "float"
+            }
+        },
+        "lod": {
+            "affects": [],
+            "help": "",
+            "label": "Lod Custom",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "max": 16,
+                "min": 0,
+                "type": "int"
+            }
+        },
+        "lodOperator": {
+            "abbr": "lodo",
+            "affects": [],
+            "help": "",
+            "label": "Lod Operator",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        0,
+                        "Less Than"
+                    ],
+                    [
+                        1,
+                        "Greater Than"
+                    ],
+                    [
+                        2,
+                        "Equal"
+                    ],
+                    [
+                        3,
+                        "Not Equal"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "lodPreset": {
+            "abbr": "lodp",
+            "affects": [],
+            "help": "",
+            "label": "Lod Preset",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        0,
+                        "Level 0"
+                    ],
+                    [
+                        1,
+                        "Level 1"
+                    ],
+                    [
+                        2,
+                        "Level 2"
+                    ],
+                    [
+                        3,
+                        "Custom"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "mass": {
+            "affects": [],
+            "help": "",
+            "label": "Mass",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.01,
+                "type": "float"
+            }
+        },
+        "maxContactImpulse": {
+            "affects": [],
+            "help": "",
+            "label": "Max Contact Impulse",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": -1.0,
+                "min": -1.0,
+                "type": "float"
+            }
+        },
+        "maxDepenetrationVelocity": {
+            "abbr": "mxdv",
+            "affects": [],
+            "help": "",
+            "label": "Hardness",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 20.0,
+                "min": -1.0,
+                "type": "float"
+            }
+        },
+        "originMatrix": {
+            "affects": [],
+            "help": "",
+            "label": "Origin Matrix",
+            "options": {
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "parentFrame": {
+            "affects": [],
+            "help": "",
+            "label": "Parent Frame",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "parentMarker": {
+            "affects": [],
+            "help": "",
+            "label": "Parent Marker",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "entity"
+            }
+        },
+        "positionIterations": {
+            "affects": [],
+            "help": "",
+            "label": "Position Iterations",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 8,
+                "max": 255,
+                "min": 0,
+                "type": "u_int"
+            }
+        },
+        "recordRotation": {
+            "affects": [],
+            "help": "",
+            "label": "Record Rotation",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "recordTranslation": {
+            "affects": [],
+            "help": "",
+            "label": "Record Translation",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "restitution": {
+            "affects": [],
+            "help": "",
+            "label": "Bounciness",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.01,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "rotatePivot": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Pivot",
+            "options": {
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "XYZ",
+                "type": "double[3]"
+            }
+        },
+        "rotatePivotTranslate": {
+            "affects": [],
+            "help": "",
+            "label": "Rotate Pivot Translate",
+            "options": {
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "XYZ",
+                "type": "double[3]"
+            }
+        },
+        "shapeExtents": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Extents",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "min": 0.01,
+                "subtype": "XYZ_LENGTH",
+                "type": "float[3]"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 0
+                }
+            ]
+        },
+        "shapeLength": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Length",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "subtype": "DISTANCE",
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 2
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 6
+                }
+            ]
+        },
+        "shapeOffset": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Offset",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "XYZ_LENGTH",
+                "type": "double[3]"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 0
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 1
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 2
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 3
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 6
+                }
+            ]
+        },
+        "shapeRadius": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Radius",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "subtype": "DISTANCE",
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 1
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 2
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 6
+                }
+            ]
+        },
+        "shapeRadiusEnd": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Radius End",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0,
+                "subtype": "DISTANCE",
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 6
+                }
+            ]
+        },
+        "shapeRotation": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Rotation",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "EULER",
+                "type": "euler"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 0
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 1
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 2
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 3
+                },
+                {
+                    "name": "shapeType",
+                    "equal": 6
+                }
+            ]
+        },
+        "shapeType": {
+            "affects": [],
+            "help": "",
+            "label": "Shape",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1,
+                "items": [
+                    [
+                        0,
+                        "Box"
+                    ],
+                    [
+                        1,
+                        "Sphere"
+                    ],
+                    [
+                        2,
+                        "Capsule"
+                    ],
+                    [
+                        6,
+                        "Tapered Capsule"
+                    ],
+                    [
+                        4,
+                        "Mesh"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "shapeVertexLimit": {
+            "affects": [],
+            "help": "",
+            "label": "Shape Vertex Limit",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 256,
+                "max": 256,
+                "min": 8,
+                "type": "u_short"
+            },
+            "conditions": [
+                {
+                    "name": "shapeType",
+                    "equal": 4
+                }
+            ]
+        },
+        "thickness": {
+            "affects": [],
+            "help": "",
+            "label": "Thickness",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.02,
+                "min": 0,
+                "type": "float"
+            }
+        },
+        "velocityIterations": {
+            "affects": [],
+            "help": "",
+            "label": "Velocity Iterations",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 1,
+                "max": 255,
+                "min": 0,
+                "type": "u_int"
+            }
+        },
+        "wakeCounter": {
+            "affects": [],
+            "help": "",
+            "label": "Wake Counter",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "min": 0,
+                "type": "u_int"
+            }
+        }
+    }
+}

@@ -1,0 +1,134 @@
+{
+    "panel": {
+        "Input": [
+            "enabled",
+            "export",
+            "thickness",
+            "friction",
+            "restitution"
+        ],
+        "__expand__": [
+            "Input"
+        ],
+        "__order__": [
+            "Input"
+        ]
+    },
+    "property": {
+        "enabled": {
+            "affects": [],
+            "help": "",
+            "label": "Enabled",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "export": {
+            "affects": [],
+            "help": "",
+            "label": "Export",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "thickness": {
+            "affects": [],
+            "help": "",
+            "label": "Thickness",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "friction": {
+            "affects": [],
+            "help": "",
+            "label": "Friction",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 0.6,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "restitution": {
+            "affects": [],
+            "help": "",
+            "label": "Restitution",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 0.01,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "inputGeometry": {
+            "affects": [],
+            "help": "",
+            "label": "Custom Mesh Shape",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "type": "pointer",
+                "subtype": "MESH"
+            }
+        },
+        "inputGeometryMatrix": {
+            "affects": [],
+            "help": "",
+            "label": "Input Geometry Matrix",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": true,
+                "internal": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "collisionGroup": {
+            "affects": [],
+            "help": "",
+            "label": "Overlap Group",
+            "options": {
+                "animatable": false,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0,
+                "max": 255,
+                "min": -1,
+                "type": "int"
+            }
+        }
+    }
+}

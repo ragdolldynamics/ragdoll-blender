@@ -1,0 +1,202 @@
+{
+    "panel": {
+        "Input": [
+            "enabled",
+            "export",
+            "selfCollide",
+            "inputType",
+            "linearMotion",
+            "angularStiffness",
+            "angularDampingRatio",
+            "linearStiffness",
+            "linearDampingRatio"
+        ],
+        "__expand__": [
+            "Input"
+        ],
+        "__order__": [
+            "Input"
+        ]
+    },
+    "property": {
+        "members": {
+            "affects": [],
+            "help": "Members of this group",
+            "label": "Members",
+            "options": {
+                "monitor": true,
+                "animatable": true,
+                "internal": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "entity[]"
+            }
+        },
+        "angularDampingRatio": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularStiffness": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "enabled": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Enabled",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "export": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Export",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "inputType": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Behaviour",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 3,
+                "items": [
+                    [
+                        2,
+                        "Animated"
+                    ],
+                    [
+                        3,
+                        "Simulated"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "linearMotion": {
+            "abbr": "limo",
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Motion",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 0,
+                "items": [
+                    [
+                        0,
+                        "Locked"
+                    ],
+                    [
+                        2,
+                        "Soft"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "linearDampingRatio": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "linearMotion",
+                    "equal": 2
+                }
+            ]
+        },
+        "linearStiffness": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": -1.0,
+                "type": "float"
+            },
+            "conditions": [
+                {
+                    "name": "linearMotion",
+                    "equal": 2
+                }
+            ]
+        },
+        "selfCollide": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Self Collide",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        }
+    }
+}

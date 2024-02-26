@@ -1,0 +1,331 @@
+{
+    "option": {
+
+        "#": "----------------",
+        "#": " Solver         ",
+        "#": "----------------",
+
+        "#": "----------------",
+        "#": " Markers        ",
+        "#": "----------------",
+
+        "markersAssignAlwaysInvokeDialog": {
+            "name": "markers_assign_always_invoke_dialog",
+            "label": "Always Show Dialog",
+            "type": "Boolean",
+            "default": false,
+            "help": "Always show this options dialog for this operation"
+        },
+        "markersRefit": {
+            "name": "markers_refit",
+            "label": "Refit Shape",
+            "type": "Boolean",
+            "default": false,
+            "help": "On making a fork, recompute the shape of the first selection, taking the newly added child into account"
+        },
+        "markersAutoSceneScale": {
+            "name": "markers_auto_scale",
+            "label": "Auto Scene Scale",
+            "type": "Boolean",
+            "default": true,
+            "help": "Automatically determine scene scale based on input selection"
+        },
+        "markersPreventIdentical": {
+            "name": "markers_prevent_identical",
+            "label": "Prevent Identical Marker",
+            "type": "Boolean",
+            "default": true,
+            "help": "Prevent assigning markers to objects/bones that are too close together"
+        },
+        "markersCreateGround": {
+            "name": "markers_create_ground",
+            "label": "Create Ground",
+            "type": "Boolean",
+            "default": true,
+            "help": "Whether or not to automatically create a ground with a new solver"
+        },
+        "markersAssignSolver": {
+            "name": "markers_assign_solver",
+            "label": "Solver",
+            "type": "Enum",
+            "items": ["Create New Solver"],
+            "isDynamicEnum": true,
+            "default": 0,
+            "help": "Add newly created markers to this solver"
+        },
+        "markersAssignGroup": {
+            "name": "markers_assign_group",
+            "label": "Group",
+            "type": "Enum",
+            "items": ["No Group", "Add to Existing", "Create New Group"],
+            "isDynamicEnum": true,
+            "default": 1,
+            "help": "Add newly created markers to this group.<br>Add to Existing will try and find the group of the first selected marker and include the newly assigned markers to it as well"
+        },
+        "markersAutoLimit": {
+            "name": "markers_auto_limit",
+            "label": "Auto Limit",
+            "type": "Boolean",
+            "default": true,
+            "help": "Transfer the locked state of rotate XYZ into locked limits."
+        },
+        "pinLocation": {
+            "name": "pinLocation",
+            "label": "Pin Location",
+            "type": "Enum",
+            "default": 0,
+            "items": ["Animation", "Simulation", "Constrained"],
+            "help": "Where should I create this pin constraint?<br>- <b>Animation</b> Wherever your animation control is currently at.<br>- <b>Simulation</b> Wherever the simulation is currently at<br>- <b>Constrained</b> Follow the animation."
+        },
+
+        "#": "----------------",
+        "#": " Recording options ",
+        "#": "----------------",
+
+        "markersRecordAlwaysInvokeDialog": {
+            "name": "markers_record_always_invoke_dialog",
+            "label": "Always Show Dialog",
+            "type": "Boolean",
+            "default": true,
+            "help": "Always show this options dialog for this operation"
+        },
+        "markersRecordRange": {
+            "name": "markers_record_range",
+            "label": "Record Range",
+            "type": "Enum",
+            "items": ["Playback Range", "Preview Range", "Custom"],
+            "default": 0,
+            "help": "- Record the entire animation range.\n- Or just the preview range.\n- Or a custom range via the sliders below."
+        },
+        "markersRecordCustomStartTime": {
+            "name": "markers_record_custom_start_time",
+            "label": "Start Time",
+            "type": "Integer",
+            "default": 1,
+            "help": "Start recording from here."
+        },
+        "markersRecordCustomEndTime": {
+            "name": "markers_record_custom_end_time",
+            "label": "End Time",
+            "type": "Integer",
+            "default": 100,
+            "help": "Record until this time."
+        },
+        "markersRecordUpdateViewport": {
+            "name": "markers_record_update_viewport",
+            "label": "Update Viewport",
+            "type": "Boolean",
+            "default": true,
+            "help": "Refresh the viewport while recording, may impact performance."
+        },
+        "markersRecordUseSelection": {
+            "name": "markers_record_use_selection",
+            "label": "Use Selection",
+            "type": "Boolean",
+            "default": false,
+            "help": "Should I record only to the selected controls?"
+        },
+        "markersRecordToLayer": {
+            "name": "markers_record_to_layer",
+            "label": "Record to NLA Track",
+            "type": "Boolean",
+            "default": false,
+            "help": "Put all simulation onto a new NLA Track"
+        },
+        "markersRecordMaintainOffset": {
+            "name": "markers_record_maintain_offset",
+            "label": "Maintain Offset",
+            "type": "Enum",
+            "items": ["Off", "From Retargeting", "From Start"],
+            "default": 2,
+            "help": "Should I keep the offset between marker and control as I record?"
+        },
+        "markersRecordKinematic": {
+            "name": "markers_record_kinematic",
+            "label": "Include Animated Keys",
+            "type": "Boolean",
+            "default": false,
+            "help": "Should I record markers set to `Animated`?"
+        },
+        "markersRecordAutoCache": {
+            "name": "markers_record_auto_cache",
+            "label": "Auto Cache",
+            "type": "Boolean",
+            "default": false,
+            "help": "Leave the simulation cached upon completing the record. This can help compare the recorded result to the simulation, as any subsequent simulation would use the newly recorded animation as input."
+        },
+        "markersRecordInitialKey": {
+            "name": "markers_record_initial_key",
+            "label": "Set Initial Key",
+            "type": "Boolean",
+            "default": true,
+            "help": "Set keyframe on the BaseLayer and start frame, to protect your animation in the event of deleting the recorded animation layer. Without this, unkeyed objects will remain in their recorded position at the frame you are currently on when deleting the layer."
+        },
+        "replaceMeshMaintainHistory": {
+            "name": "replace_mesh_maintain_history",
+            "label": "Maintain History",
+            "type": "Boolean",
+            "default": false,
+            "help": "Keep Ragdoll mesh up to date with the Blender replaced geometry"
+        },
+        "replaceMeshMaintainOffset": {
+            "name": "replace_mesh_maintain_offset",
+            "label": "Maintain Offset",
+            "type": "Boolean",
+            "default": true,
+            "help": "Use the worldspace position of the mesh to be replaced."
+        },
+        "replaceMeshMaintainHistory": {
+            "name": "replace_mesh_maintain_history",
+            "label": "Maintain History",
+            "type": "Boolean",
+            "default": false,
+            "help": "Allow changes to be made to the original mesh."
+        },
+
+        "#": "----------------",
+        "#": " Global options ",
+        "#": "----------------",
+
+        "scale": {
+            "name": "scale",
+            "label": "Draw Scale",
+            "type": "Float",
+            "default": 1.0,
+            "min": 0.01,
+            "max": 10.0,
+            "help": "Scale at which to draw viewport widgets, like constraints.",
+            "monitor": true
+        },
+        "maxFrames": {
+            "name": "max_frames",
+            "label": "Maximum Frames",
+            "type": "Integer",
+            "default": 9999,
+            "min": 1,
+            "max": 9999,
+            "help": "Ragdoll will allocate memory for every frame of the current Maya timeline, up to this amount. A default of 10,000 means an average of 5-10 mb of memory is allocated.",
+            "monitor": true
+        },
+        "resourcePath": {
+            "name": "resource_path",
+            "label": "Resource Path",
+            "type": "String",
+            "default": "",
+            "help": "Absolute path to where resources are located.",
+            "hide": true,
+            "monitor": true
+        },
+        "resolutionScaleFactor": {
+            "name": "resolution_scale_factor",
+            "label": "Resolution Scale",
+            "type": "Float",
+            "default": 1.0,
+            "min": 0.5,
+            "max": 4.0,
+            "help": "Scale user interface elements by this amount. Retina screens would typically need a 2.0 scale, whereas a 1080p Windows laptop from 2005 would use a scale of 1.0.",
+            "monitor": true
+        },
+        "dpiScale": {
+            "name": "dpi_scale",
+            "label": "Screen DPI Scale",
+            "type": "Float",
+            "default": 1.0,
+            "min": 0.5,
+            "max": 4.0,
+            "help": "Scale user interface elements by this amount. Retina screens would typically need a 2.0 scale, whereas a 1080p Windows laptop from 2005 would use a scale of 1.0.",
+            "hide": true,
+            "monitor": true
+        },
+        "shaderDepthOffset": {
+            "name": "shader_depth_offset",
+            "label": "Shader Depth Offset",
+            "type": "Float",
+            "default": 0.00001,
+            "min": 0,
+            "max": 1,
+            "help": "",
+            "hide": true
+        },
+        "manipulatorDisplayOptions": {
+            "name": "manipulator_display_options",
+            "label": "Display Manipulator Options",
+            "type": "Boolean",
+            "default": true,
+            "help": "Default mode for display of options for the various modes.",
+            "monitor": true
+        },
+        "manipulatorDisplayHelp": {
+            "name": "manipulator_display_help",
+            "label": "Display Manipulator Help",
+            "type": "Boolean",
+            "default": true,
+            "help": "Display some help text whenever the manipulator is active.",
+            "monitor": true
+        },
+        "manipulatorSymmetry": {
+            "name": "manipulator_symmetry",
+            "label": "Manipulator Symmetry",
+            "type": "Boolean",
+            "default": true,
+            "help": "Whether or not the manipulator should mirror itself.",
+            "monitor": true
+        },
+
+        "#": "----------------",
+        "#": " Import/Export  ",
+        "#": "----------------",
+
+        "exportPath": {
+            "name": "export_path",
+            "label": "Filename",
+            "type": "Path",
+            "subtype": "FILE_PATH",
+            "editable": false,
+            "default": "",
+            "help": "Export physics to this .rag file."
+        }
+
+    },
+    "panel": {
+        "__order__": [
+            "Global",
+            "Manipulator",
+            "Import / Export",
+            "Marker",
+            "Recording"
+        ],
+        "Global": [
+            "max_frames",
+            "scale",
+            "resolution_scale_factor"
+        ],
+        "Manipulator": [
+            "manipulator_display_options",
+            "manipulator_display_help",
+            "manipulator_symmetry"
+        ],
+        "Marker": [
+            "markers_assign_always_invoke_dialog",
+            "markers_refit",
+            "markers_create_ground",
+            "markers_auto_limit",
+            "markers_assign_solver",
+            "markers_assign_group"
+        ],
+        "Recording": [
+            "markers_record_always_invoke_dialog",
+            "markers_record_range",
+            "markers_record_custom_start_time",
+            "markers_record_custom_end_time",
+            "markers_record_use_selection",
+            "markers_record_to_layer",
+            "markers_record_auto_cache",
+            "markers_record_initial_key",
+            "markers_record_kinematic"
+        ],
+        "Import / Export": [
+            "export_path"
+        ]
+    }
+}

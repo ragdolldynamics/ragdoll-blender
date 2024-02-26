@@ -1,0 +1,6 @@
+__pycache__/
+
+.idea/
+.vs/
+.vscode/
+/cmake-build-*/

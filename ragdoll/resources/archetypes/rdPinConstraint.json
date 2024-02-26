@@ -1,0 +1,295 @@
+{
+    "panel": {
+        "Advanced": [
+            "influence",
+            "linearStiffnessXYZ",
+            "angularStiffnessSwing",
+            "angularStiffnessTwist"
+        ],
+        "General": [
+            "enabled",
+            "export",
+            "springType",
+            "linearStiffness",
+            "linearDampingRatio",
+            "angularStiffness",
+            "angularDampingRatio"
+        ],
+        "__expand__": [
+            "General"
+        ],
+        "__order__": [
+            "General",
+            "Advanced"
+        ]
+    },
+    "property": {
+        "angularDampingRatio": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularStiffness": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularStiffnessSwing": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Stiffness Swing",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "max": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "angularStiffnessTwist": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Stiffness Twist",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "max": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "childFrame": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Child Frame",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "childMarker": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Child Marker",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "entity"
+            }
+        },
+        "enabled": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Enabled",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "export": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Export",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "linearDampingRatio": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Damping",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 0.1,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "linearStiffness": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Stiffness",
+            "options": {
+                "animatable": true,
+                "hidden": false
+            },
+            "value": {
+                "default": 1.0,
+                "min": 0.0,
+                "type": "float"
+            }
+        },
+        "linearStiffnessXYZ": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Translate Stiffness",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "max": 1.0,
+                "min": 0.0,
+                "subtype": "XYZ",
+                "type": "float[3]"
+            }
+        },
+        "parentFrame": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Parent Frame",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "matrix"
+            }
+        },
+        "parentMarker": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Parent Marker",
+            "options": {
+                "monitor": true,
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "entity"
+            }
+        },
+        "rotatePivot": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Rotate Pivot",
+            "options": {
+                "animatable": false,
+                "hidden": true
+            },
+            "value": {
+                "default": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "subtype": "XYZ",
+                "type": "double[3]"
+            }
+        },
+        "springType": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Spring Type",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": 1,
+                "items": [
+                    [
+                        0,
+                        "Force"
+                    ],
+                    [
+                        1,
+                        "Acceleration"
+                    ]
+                ],
+                "type": "enum"
+            }
+        },
+        "influence": {
+            "affects": [],
+            "help": "In regards to angular and linear stiffness, this property controls the effect the parent has over the child",
+            "label": "Influence",
+            "options": {
+                "animatable": true,
+                "hidden": false,
+                "internal": false
+            },
+            "value": {
+                "default": 0.5,
+                "min": 0.0,
+                "max": 1.0,
+                "type": "float"
+            }
+        },
+        "useScale": {
+            "affects": [],
+            "help": "",
+            "label": "Use Scale",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": false,
+                "type": "bool"
+            }
+        }
+    }
+}

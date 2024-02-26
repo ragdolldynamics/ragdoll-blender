@@ -1,0 +1,70 @@
+{
+    "panel": {
+        "General": [
+            "enabled",
+            "export"
+        ],
+        "__expand__": [
+            "General"
+        ],
+        "__order__": [
+            "General"
+        ]
+    },
+    "property": {
+        "childMarker": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Child Marker",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "pointer"
+            }
+        },
+        "enabled": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Enabled",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "export": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Export",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "default": true,
+                "type": "bool"
+            }
+        },
+        "parentMarker": {
+            "affects": [
+            ],
+            "help": "",
+            "label": "Parent Marker",
+            "options": {
+                "animatable": false,
+                "hidden": false
+            },
+            "value": {
+                "type": "pointer"
+            }
+        }
+    }
+}
