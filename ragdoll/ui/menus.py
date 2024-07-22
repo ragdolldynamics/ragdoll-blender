@@ -5,6 +5,7 @@ import bpy
 import ragdollc
 
 from . import icons
+from .. import bl_info
 from ..vendor import bpx
 from ..operators import (
     create_pin_constraint,
@@ -97,7 +98,9 @@ class RagdollMainMenu(bpy.types.Menu):
         menu_item(col, "Markers")
         text = "Assign and Connect" if context.mode == "POSE" else "Assign"
         menu_item(col, assign_markers.AssignMarkers, text=text)
-        menu_item(col, assign_environment.AssignEnvironment)
+
+        if context.mode == "OBJECT":
+            menu_item(col, assign_environment.AssignEnvironment)
 
         menu_item(col, "  ")
         menu_item(col, "Transfer")
@@ -124,7 +127,7 @@ class RagdollMainMenu(bpy.types.Menu):
         menu_item(col, "  ")
         menu_item(col, RagdollAssetsMenu)
         menu_item(col, "  ")
-        text = "Ragdoll %s" % ragdollc.__version__
+        text = "Ragdoll %s" % ".".join("%02d" % c for c in bl_info["version"])
         menu_item(col, licence.Licence, text=text, icon="logo.png")
 
 
@@ -228,7 +231,7 @@ class RagdollEditMenu(bpy.types.Menu):
 
         menu_item(col, "  ")
         menu_item(col, "Solver")
-        _soon(col, "Merge Solvers", icon="PIVOT_INDIVIDUAL")
+        menu_item(col, edit_marker.MergeSolvers)
         _soon(col, "Extract Markers", icon="PIVOT_ACTIVE")
         _soon(col, "Move to Solver", icon="PIVOT_MEDIAN")
 
@@ -247,9 +250,12 @@ class RagdollFieldsMenu(bpy.types.Menu):
         layout = self.layout
         col = layout.column()
 
+        icon_Gravity = ("LIGHTPROBE_SPHERE" if bpx.BLENDER_41_plus else
+                        "LIGHTPROBE_CUBEMAP")
+
         _soon(col, "Air", icon="FORCE_WIND")
         _soon(col, "Drag", icon="FORCE_DRAG")
-        _soon(col, "Gravity", icon="LIGHTPROBE_CUBEMAP")
+        _soon(col, "Gravity", icon=icon_Gravity)
         _soon(col, "Newton", icon="SORTBYEXT")
         _soon(col, "Radial", icon="PROP_CON")
         _soon(col, "Turbulence", icon="FORCE_TURBULENCE")

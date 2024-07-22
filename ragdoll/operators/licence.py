@@ -8,6 +8,7 @@ import bpy
 import ragdollc
 from ragdollc import registry
 
+from .. import LICENCE_STATE
 from ..ui import icons, draw
 
 
@@ -29,6 +30,39 @@ product_to_brand = {
 }
 
 
+class LicenceAupExpired(bpy.types.Operator):
+    bl_idname = "ragdoll.licence_aup_expired"
+    bl_label = "aupExpired"
+    bl_options = {"INTERNAL"}
+    bl_description = ""
+
+    def execute(self, context):
+        LICENCE_STATE.add("aupExpired")
+        return {"FINISHED"}
+
+
+class LicenceExpired(bpy.types.Operator):
+    bl_idname = "ragdoll.licence_expired"
+    bl_label = "expired"
+    bl_options = {"INTERNAL"}
+    bl_description = ""
+
+    def execute(self, context):
+        LICENCE_STATE.add("expired")
+        return {"FINISHED"}
+
+
+class LicenceRecordingLimit(bpy.types.Operator):
+    bl_idname = "ragdoll.licence_recording_limit"
+    bl_label = "recordingLimit"
+    bl_options = {"INTERNAL"}
+    bl_description = ""
+
+    def execute(self, context):
+        LICENCE_STATE.add("recordingLimit")
+        return {"FINISHED"}
+
+
 class Licence(bpy.types.Operator):
     bl_idname = "ragdoll.licence"
     bl_label = "Licence"
@@ -39,25 +73,33 @@ class Licence(bpy.types.Operator):
 
     is_activated: bpy.props.BoolProperty(**_opt)
     is_trial: bpy.props.BoolProperty(**_opt)
-    trial_days: bpy.props.IntProperty(name="Trial Days Remain", **_opt)
+    trial_days: bpy.props.IntProperty(name="Remaining Trial Days", **_opt)
     expires: bpy.props.BoolProperty(**_opt)
     expiry: bpy.props.StringProperty(**_opt)
     expiry_date: bpy.props.StringProperty(name="Expiry Date", **_opt)
+    core_version: bpy.props.StringProperty(name="Ragdoll Core", **_opt)
     serial: bpy.props.StringProperty(name="Product Key", **_opt)
     floating: bpy.props.StringProperty(**_opt)
-    product: bpy.props.StringProperty(name="Licence Type", **_opt)
+    product: bpy.props.StringProperty(name="Product", **_opt)
+    aup: bpy.props.StringProperty(name="AUP", **_opt)
     is_expired: bpy.props.BoolProperty(**_opt)
 
     def execute(self, context):
-
         ragdollc.install()
 
         Licence.changed = True
-        dpi_scale = context.preferences.system.ui_scale
-        width = int(360 * dpi_scale)
-        return context.window_manager.invoke_popup(self, width=width)
+
+        if not bpy.app.background:
+            dpi_scale = context.preferences.system.ui_scale
+            width = int(360 * dpi_scale)
+            return context.window_manager.invoke_popup(self, width=width)
+
+        return {"FINISHED"}
 
     def update_licence(self):
+        # This is now out of date
+        LICENCE_STATE.clear()
+
         licence = registry.ctx("LicenceComponent")
 
         self.is_activated = licence.isActivated
@@ -67,18 +109,29 @@ class Licence(bpy.types.Operator):
         self.expiry = licence.expiry
         self.serial = licence.serial
         self.product = licence.product
+        self.aup = licence.aup
         self.floating = os.environ.get("RAGDOLL_FLOATING", "")
 
-        self.product = "Ragdoll %s" % product_to_brand.get(
+        product = product_to_brand.get(
             self.product,
             self.product
-        ).capitalize()
+        )
+
+        if not (licence.isCommercial or licence.isEarlyBird):
+            product = "%s - 100 frame limit" % product
+
+        self.product = "Ragdoll %s" % product.capitalize()
+        self.core_version = ragdollc.__version__
 
         if self.is_trial:
             self.is_expired = self.trial_days == 0
-            self.expiry_date = (
-                datetime.now() + timedelta(days=self.trial_days)
-            ).strftime("%Y.%m.%d")
+
+            if self.is_expired:
+                self.expiry_date = "Already expired"
+            else:
+                self.expiry_date = (
+                    datetime.now() + timedelta(days=self.trial_days)
+                ).strftime("%Y.%m.%d")
 
         else:
             if self.expires:
@@ -129,6 +182,12 @@ class Licence(bpy.types.Operator):
 
         expiry_col = status_row.column()
         expiry_col.prop(self, "expiry_date")
+
+        aup_col = status_row.column()
+        aup_col.prop(self, "aup")
+
+        core_col = status_row.column()
+        core_col.prop(self, "core_version")
 
         body.separator()
 
@@ -243,7 +302,7 @@ class LicenceNodeLocked(bpy.types.Operator):
         Licence.changed = True
 
         if result != STATUS_OK:
-            self.report({"ERROR"}, f"Ragdoll Licencing Error: {result}")
+            self.report({"ERROR"}, "Ragdoll Licencing Error: %d" % result)
 
         return {"FINISHED"}
 
@@ -344,6 +403,9 @@ def _error(message):
 
 _classes = (
     Licence,
+    LicenceAupExpired,
+    LicenceExpired,
+    LicenceRecordingLimit,
     LicenceFloating,
     LicenceNodeLocked,
     LicenceOffline,

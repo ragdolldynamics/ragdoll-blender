@@ -5,21 +5,45 @@ from .vendor import bpx
 
 
 def debug(message):
+    """Show message only in Blender Info panel
+
+    Important: This is GUI based logging, do not use this in e.g. an eval loop
+        as it may make GUI a bit unresponsive in such scenario.
+
+    """
     _message(message, logging.DEBUG)
     return True
 
 
 def info(message):
+    """Show message in Info panel and status bar, as info
+
+    Important: This is GUI based logging, do not use this in e.g. an eval loop
+        as it may make GUI a bit unresponsive in such scenario.
+
+    """
     _message(message, logging.INFO)
     return True
 
 
 def warning(message):
+    """Show message in Info panel and status bar, as warning
+
+    Important: This is GUI based logging, do not use this in e.g. an eval loop
+        as it may make GUI a bit unresponsive in such scenario.
+
+    """
     _message(message, logging.WARNING)
     return False
 
 
 def error(message):
+    """Show message everywhere and a pop-up bubble
+
+    Important: This is GUI based logging, do not use this in e.g. an eval loop
+        as it may make GUI a bit unresponsive in such scenario.
+
+    """
     _message(message, logging.ERROR)
     return False
 

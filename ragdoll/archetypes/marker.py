@@ -1,10 +1,12 @@
 import bpy
-
+import logging
 import ragdollc
 from ragdollc import registry
 
 from .. import scene, types
 from ..vendor import bpx
+
+console_log = logging.getLogger("ragdoll")
 
 
 @scene.with_properties("rdMarker.json")
@@ -62,6 +64,11 @@ def evaluate_start_state(entity):
     xobj = bpx.alias(entity)
     xsource = xobj["sourceTransform"].read(False)
 
+    if xsource is None:
+        console_log.warning("Ragdoll marker missing source transform: %s"
+                            % xobj)
+        return
+
     # Keep this up to date
     xsource.data["entity"] = entity
 
@@ -82,8 +89,6 @@ def evaluate_start_state(entity):
     Rigid.restitution = xobj["restitution"].read(False)
     Rigid.thickness = xobj["thickness"].read(False)
     Rigid.ignoreGravity = xobj["ignoreGravity"].read(False)
-    Rigid.ignoreFields = xobj["ignoreFields"].read(False)
-    Rigid.wakeCounter = xobj["wakeCounter"].read(False)
     Rigid.positionIterations = xobj["positionIterations"].read(False)
     Rigid.velocityIterations = xobj["velocityIterations"].read(False)
     Rigid.maxContactImpulse = xobj["maxContactImpulse"].read(False)
@@ -169,6 +174,12 @@ def evaluate_current_state(entity):
         return
 
     xsource = xobj["sourceTransform"].read(False)
+
+    if xsource is None:
+        console_log.warning("Ragdoll marker missing source transform: %s"
+                            % xobj)
+        return
+
     mat = types.to_rdmatrix(xsource.matrix())
 
     Kinematic = registry.get("KinematicComponent", entity)

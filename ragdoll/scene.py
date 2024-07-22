@@ -134,7 +134,7 @@ def on_execute_command(command):
         bpy.ops.ragdoll.snap_to_simulation()
 
     elif command == "keyframeLive":
-        bpy.ops.ragdoll.snap_to_simulation()
+        bpy.ops.ragdoll.snap_to_simulation(keyframe=True)
 
     elif command == "liveUndo":
         pass
@@ -222,8 +222,6 @@ def post_undo_redo():
 
 
 def touch_members():
-    from .archetypes import solver
-
     for xsolver in bpx.ls(type="rdSolver"):
         entity = xsolver.data["entity"]
         ragdollc.scene.propertyChanged(entity, "members")
@@ -251,7 +249,7 @@ def find_group(marker) -> bpx.BpxObject | None:
                 return group
 
 
-def find_or_create_current_solver() -> bpx.BpxObject | None:
+def find_or_create_current_solver() -> bpx.BpxType | None:
     # Prefer active selection
     solvers = bpx.selection("rdSolver", active=True)
 
@@ -280,6 +278,14 @@ def post_file_open():
         entity = xobj.data.get("entity")
         solver.evaluate_members(entity)
 
+        # Fetch current pose, regardless of whether we are
+        # on the start frame on scene-open
+        Time = registry.get("TimeComponent", entity)
+        if bpy.context.scene.frame_current != Time.startFrame:
+            print("Pretending..")
+            ragdollc.scene.setCurrentFrame(Time.startFrame)
+            ragdollc.scene.evaluate(entity)
+
     upgrade.upgrade_all()
 
 
@@ -292,7 +298,7 @@ def object_to_entity(xobj: bpy.types.Object) -> int:
     return xobj.data.get("entity", 0)
 
 
-def object_to_marker(xobj: bpx.BpxType) -> bpx.BpxObject:
+def object_to_marker(xobj: bpx.BpxType) -> bpx.BpxObject | None:
     """Return the marker associated with `xobj`"""
 
     entity = xobj.data.get("entity")
@@ -303,10 +309,11 @@ def object_to_marker(xobj: bpx.BpxType) -> bpx.BpxObject:
     if not xobj.is_alive():
         return
 
-    return xobj
+    if xobj.type() == "rdMarker":
+        return xobj
 
 
-def source_to_object(source) -> bpx.BpxObject:
+def source_to_object(source) -> bpx.BpxType:
     """Convert a VectorPointerGroup to an object
 
     References from entity to Blender object comes in
@@ -334,8 +341,11 @@ def source_to_object(source) -> bpx.BpxObject:
 
     if isinstance(obj.data, bpy.types.Armature):
         # Try the fast route first
-        obj = bpx.find_bone_by_index(source.object, source.boneidx)
-
+        obj = bpx.find_bone_by_index(
+            source.object,
+            source.boneidx,
+            source.boneid,
+        )
         # The slow route
         if not obj:
             obj = bpx.find_bone_by_uuid(source.object, source.boneid)

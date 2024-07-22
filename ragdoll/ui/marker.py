@@ -27,6 +27,7 @@ class RD_PT_Marker(draw.PropertiesPanel):
         xsource = xobj["sourceTransform"].read()
 
         if not xsource:
+            row.label(text="", icon="GHOST_DISABLED")
             return
 
         if isinstance(xsource, bpx.BpxBone):
@@ -43,6 +44,10 @@ class RD_PT_Marker(draw.PropertiesPanel):
 
         # Disconnected or source was removed
         if not xsource:
+            row = layout.row()
+            row.label(text="(dead marker)")
+            row.alignment = "CENTER"
+            row.enabled = False
             return
 
         row = layout.row()
@@ -73,7 +78,7 @@ class RD_PT_Marker(draw.PropertiesPanel):
 
 class _ActorPanel(bpy.types.Panel):
     def draw_link_to_marker(self, marker):
-        if not marker.is_alive():
+        if not marker or not marker.is_alive():
             return
 
         layout = self.layout
@@ -107,10 +112,11 @@ class RD_PT_Marker_On_Object(_ActorPanel):
 
     @classmethod
     def poll(cls, context):
+        # Return True if object is a marker's source transform.
         if context.mode == "OBJECT" and context.object:
             xobj = bpx.BpxType(context.object)
             return (
-                not xobj.type() == "rdMarker" and
+                xobj.type() != "rdMarker" and
                 scene.object_to_marker(xobj) is not None
             )
         return False

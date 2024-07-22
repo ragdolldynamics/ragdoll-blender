@@ -103,7 +103,18 @@ def reset():
 
 def _make_update_callback(key, property_name):
     def preference_changed(preference, _context):
-        ragdollc.options.write(key, getattr(preference, property_name))
+        typ = preference.bl_rna.properties[property_name]
+        value = getattr(preference, property_name)
+
+        if isinstance(typ, bpy.types.EnumProperty):
+            enum_to_index = {
+                enum.name: enum.value
+                for enum in typ.enum_items
+            }
+
+            value = enum_to_index.get(value, 0)
+
+        ragdollc.options.write(key, value)
 
     return preference_changed
 
@@ -348,6 +359,15 @@ def install():
     pref = bpy.context.preferences
 
     dpi_scale = (pref.view.ui_scale * pref.system.ui_scale)
+
+    # Install values from Blender into core
+    for key, value in _DATA["option"].items():
+        if not value.get("monitor", False):
+            continue
+
+        property_name = value["name"]
+        default_value = read(key)
+        write(key, default_value)
 
     # Defined by Blender and used by Ragdoll too
     write("dpiScale", dpi_scale)

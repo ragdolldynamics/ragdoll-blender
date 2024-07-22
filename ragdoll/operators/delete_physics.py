@@ -1,7 +1,7 @@
 import bpy
 from . import tag_redraw
 from ..vendor import bpx
-from .. import util
+from .. import util, scene
 
 _physics_types = (
     "rdSolver",
@@ -60,8 +60,18 @@ class DeletePhysicsBySelection(bpy.types.Operator):
     icon = "GHOST_DISABLED"
 
     def execute(self, context):
+        to_delete = set()
+
+        for xobj in bpx.selection():
+            if xobj.type() in _physics_types:
+                to_delete.add(xobj)
+            else:
+                marker = scene.object_to_marker(xobj)
+                if marker:
+                    to_delete.add(marker)
+
         with bpx.object_mode():
-            delete_physics(bpx.selection(type=_physics_types))
+            delete_physics(to_delete)
 
         tag_redraw(context.screen)
         return {"FINISHED"}

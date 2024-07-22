@@ -13,7 +13,7 @@ import ragdollc
 from ragdollc import registry
 
 from .vendor import bpx
-from . import scene, util, constants, types
+from . import scene, util, constants, types, log
 
 
 def reassign(transform, marker):
@@ -202,6 +202,18 @@ def remove_from_group(markers, group=None):
         ragdollc.scene.propertyChanged(entity, "members")
 
 
+def merge_solvers(a, b):
+    for member in a["members"]:
+        if not member:
+            continue
+
+        b["members"].append({"object": member.object})
+
+    bpx.delete(a)
+
+    return True
+
+
 def uncache(solver):
     solver["cache"] = False
     ragdollc.scene.evaluate(solver.data["entity"])
@@ -266,7 +278,8 @@ def snap_to_simulation(solver, opts=None):
     """
 
     opts = dict({
-        "iterations": 2
+        "iterations": 2,
+        "keyframe": False,
     }, **(opts or {}))
 
     def transfer(dst):
@@ -285,6 +298,11 @@ def snap_to_simulation(solver, opts=None):
 
         if isinstance(dst, bpx.BpxBone):
             armature = dst.handle()
+
+            if armature is None:
+                log.warning("%s wasn't an armature, this is a bug." % dst)
+                return
+
             handle = dst.pose_bone()
             handle.matrix_basis = armature.convert_space(
                 pose_bone=handle,
@@ -299,8 +317,17 @@ def snap_to_simulation(solver, opts=None):
     current_frame = bpy.context.scene.frame_current
 
     # Find roots
+    #
+    # We find the root of each Marker here and apply the simulation
+    # onto the entire hierarchy. Since we cannot affect a child without
+    # also affects its parent. They affect each other.
+    #
     roots = set()
     for el in solver["members"]:
+        # May have been disconnected/deleted
+        if not el.object:
+            continue
+
         marker = bpx.BpxType(el.object)
 
         if marker.type() != "rdMarker":
@@ -312,10 +339,11 @@ def snap_to_simulation(solver, opts=None):
         if rigid.kinematic:
             continue
 
-        dst = marker["destinationTransforms"][0]
+        dsts = marker["destinationTransforms"]
 
-        if dst.object:
-            roots.add(dst.object)
+        # May not have a target
+        if len(dsts) > 0 and dsts[0].object:
+            roots.add(dsts[0].object)
 
     # Find destinations
     dsts = []
@@ -340,6 +368,7 @@ def snap_to_simulation(solver, opts=None):
                 dsts.append((xbone, id(root) + level))
         else:
             xobj = bpx.BpxObject(root)
+            marker = bpx.alias(entity)
 
             level = 0
             parent = root.parent
@@ -349,8 +378,27 @@ def snap_to_simulation(solver, opts=None):
 
             dsts.append((xobj, level))
 
+    # Filter by recordTranslation/Rotation property
+    filtered_dsts = []
+    for x, _ in dsts[:]:
+        entity = x.data.get("entity")
+        marker = bpx.alias(entity)
+
+        record_translation = marker["recordTranslation"].read()
+        record_rotation = marker["recordRotation"].read()
+
+        if any((record_translation, record_rotation)):
+            filtered_dsts.append((x, _))
+
+        else:
+            log.info(
+                "%s skipped because recordTranslation "
+                "and recordRotation was both disabled." % x
+            )
+    dsts = filtered_dsts
+
     for it in range(opts["iterations"]):
-        last_iteration = it = opts["iterations"] - 1
+        last_iteration = it == (opts["iterations"] - 1)
 
         for dst, _ in sorted(dsts, key=lambda i: i[1]):
             transfer(dst)
@@ -358,21 +406,40 @@ def snap_to_simulation(solver, opts=None):
             # Keyframe ahead of updating the dependency graph,
             # otherwise existing keyframe animation or constraints
             # would override what we've just transferred.
-            if last_iteration:
+            if last_iteration and opts["keyframe"]:
                 if isinstance(dst, bpx.BpxBone):
                     handle = dst.pose_bone()
                 else:
                     handle = dst.handle()
 
-                for axis in dst.unlocked_rotation():
-                    handle.keyframe_insert("rotation_euler",
-                                           frame=current_frame,
-                                           index=axis)
+                entity = dst.data.get("entity")
+                marker = bpx.alias(entity)
 
-                for axis in dst.unlocked_location():
-                    handle.keyframe_insert("location",
-                                           frame=current_frame,
-                                           index=axis)
+                record_translation = marker["recordTranslation"].read()
+                record_rotation = marker["recordRotation"].read()
+
+                if record_rotation:
+                    if handle.rotation_mode == "AXIS_ANGLE":
+                        handle.keyframe_insert("rotation_axis_angle",
+                                               frame=current_frame)
+                    elif handle.rotation_mode == "QUATERNION":
+                        handle.keyframe_insert("rotation_quaternion",
+                                               frame=current_frame)
+
+                    else:
+                        # Euler angles can be individually locked,
+                        # which is only really relevant to Euler and not
+                        # axis-angle or quaternions.
+                        for axis in dst.unlocked_rotation():
+                            handle.keyframe_insert("rotation_euler",
+                                                   frame=current_frame,
+                                                   index=axis)
+
+                if record_translation:
+                    for axis in dst.unlocked_location():
+                        handle.keyframe_insert("location",
+                                               frame=current_frame,
+                                               index=axis)
 
             # We've moved what is possibly a parent and need
             # children to update to their new position before

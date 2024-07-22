@@ -9,8 +9,8 @@ import bpy
 bl_info = {
     "name": "Ragdoll",
     "version": (2077, 7, 7),        # Auto generated. DO NOT TOUCH!
-    "blender": (3, 4, 0),           # The minimum Blender version required
-    "ragdollcore": (2024, 2, 22),   # The minimum Ragdoll Core version required
+    "blender": (3, 3, 0),           # The minimum Blender version required
+    "ragdollcore": (2024, 5, 23),   # The minimum Ragdoll Core version required
     "category": "Animation",
     "author": "Ragdoll Dynamics",
     "description": "Animate with real-time physics.",
@@ -31,6 +31,8 @@ RAGDOLL_FLOATING = os.getenv("RAGDOLL_FLOATING")
 assert PLATFORM_NAME in ("windows", "linux", "darwin"), (
     "%s unsupported platform" % PLATFORM_NAME
 )
+
+LICENCE_STATE = set()
 
 
 def get_install_dir():

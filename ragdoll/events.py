@@ -3,7 +3,7 @@ import ragdollc
 
 from ragdollc import registry
 
-from . import viewport, scene, preferences, constants
+from . import viewport, scene, preferences, constants, log
 from .vendor import bpx
 from .archetypes import (
     solver,
@@ -36,6 +36,7 @@ def install():
     bpy.app.handlers.undo_post.append(post_undo_redo)
     bpy.app.handlers.redo_post.append(post_undo_redo)
     bpy.app.handlers.frame_change_pre.append(pre_frame_changed)
+    bpy.app.handlers.save_pre.insert(0, on_save_pre)
 
     handler = bpy.types.SpaceView3D.draw_handler_add(
         post_viewport_draw, (), "WINDOW", "POST_VIEW"
@@ -92,12 +93,28 @@ def install():
     ragdollc.handlers.selectionChanged.append(on_ragdoll_selection_changed)
     ragdollc.handlers.parseInputGeometry.append(marker.parse_input_geometry)
     ragdollc.handlers.executeCommand.append(on_execute_command)
+    ragdollc.handlers.userEvent.append(on_user_event)
+    ragdollc.handlers.preExport.append(pre_export)
 
     # Automatically removed upon uninstalling bpx
     bpx.handlers["selection_changed"].append(on_blender_selection_changed)
     bpx.handlers["depsgraph_changed"].append(on_depsgraph_changed)
 
     bpx.unset_called(uninstall)
+
+
+def on_user_event(event):
+    if event == "ragdollAupExpiredEvent":
+        log.warning("This version of Ragdoll is newer than your AUP")
+        bpy.ops.ragdoll.licence_aup_expired()
+
+    if event == "ragdollExpiredEvent":
+        log.warning("Your licence of Ragdoll Dynamics has expired")
+        bpy.ops.ragdoll.licence_expired()
+
+    if event == "ragdollRecordingLimitEvent":
+        log.warning("A recording limit was reached, check your licence")
+        bpy.ops.ragdoll.licence_recording_limit()
 
 
 def _remove_if_exists(handler, handlers):
@@ -143,6 +160,57 @@ def on_option_set(name, value):
     """Ragdoll Core edited a preference"""
 
     preferences.write(name, value)
+
+
+@bpy.app.handlers.persistent
+def on_save_pre(*args):
+    """When users delete Markers, they still exist in bpy.data.objects
+
+    This callback permanently removes anything that was removed at the
+    time of saving.
+
+    It's not perfect, since a user can undo a saving of the Blender scene
+    (why oh why) so we lose the connection between the solver and member.
+
+    TODO: Consider why and how to account for this.
+
+    """
+
+    removed = set()
+
+    for xsolver in bpx.ls(type="rdSolver"):
+        for member in xsolver["members"].read(False):
+            if not member.object:  # Could be disconnected
+                continue
+
+            xmember = bpx.BpxType(member.object)
+
+            if not xmember.scenes():
+                removed.add(xmember)
+
+        # Also consider whether the solver itself has been removed
+        if not xsolver.scenes():
+            removed.add(xsolver)
+
+    error = False
+    if removed:
+        for xobj in removed:
+            try:
+                bpy.data.objects.remove(xobj.handle())
+
+            # Failure here is not important
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                error = True
+
+    if error:
+        log.info(
+            "I tried tidying up the scene when you saved, but "
+            "struggled. Things should still work ok, but you may "
+            "see Markers that exist but doesn't. Let us know "
+            "if you see this and include steps we can take to reproduce."
+        )
 
 
 """
@@ -246,6 +314,19 @@ def evaluate_members(entity):
 
     if arch == "rdSolver":
         return solver.evaluate_members(entity)
+
+
+def pre_export(entity):
+    arch = registry.archetype(entity)
+
+    # Populate destination markers, for export
+    if arch == "rdMarker":
+        xobj = bpx.alias(entity)
+        MarkerUi = registry.get("MarkerUIComponent", entity)
+        MarkerUi.destinationTransforms.clear()
+        for xdest in xobj["destinationTransforms"]:
+            xdest = scene.source_to_object(xdest)
+            MarkerUi.destinationTransforms.append(xdest.path())
 
 
 @bpx.deferred
@@ -437,7 +518,7 @@ def post_undo_redo(blscene, *_):
 def post_dpi_changed():
     pref = bpy.context.preferences
     value = pref.view.ui_scale * pref.system.ui_scale
-    preferences.write("ragdollDpiScale", value)
+    preferences.write("dpiScale", value)
 
 
 class BusSubscriber:

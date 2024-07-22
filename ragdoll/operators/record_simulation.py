@@ -6,8 +6,7 @@ import ragdollc
 from ragdollc import registry
 
 from . import OperatorWithOptions, PlaceholderOption
-from .. import scene, constants, types, log
-from ..ui import icons
+from .. import scene, constants, types, log, LICENCE_STATE
 from ..vendor import bpx
 
 
@@ -81,6 +80,23 @@ class RecordSimulation(OperatorWithOptions):
             "solverEntity": entity,
         }
 
+        # You found it!
+        #
+        # However, removing this check won't enable the recording
+        # of more frames. Once a frame greater than 100 is attempted,
+        # Ragdoll will return a translate/rotate value of 0.
+        # This check is merely for your convenience.
+        licence = registry.ctx("LicenceComponent")
+        is_expired = licence.isTrial and licence.trialDays < 1
+
+        if is_expired:
+            bpy.ops.ragdoll.licence()
+            return {"CANCELLED"}
+
+        elif not licence.isCommercial and not licence.isEarlyBird:
+            if (state["endFrame"] - state["startFrame"]) > 101:
+                state["endFrame"] = state["startFrame"] + 100
+
         state["markers"] = _find_markers(solver)
         state["markerToDst"] = _find_destinations(state["markers"])
         state["markerToSrc"] = _generate_kinematic_hierarchy(solver)
@@ -122,6 +138,9 @@ class RecordSimulation(OperatorWithOptions):
         for msg, progress in self._runner_it:
             context.window_manager.progress_update(progress)
 
+            if LICENCE_STATE:
+                break
+
             msg: str = "  %s %3d%%" % (msg.ljust(30, "."), progress // 5 * 5)
             if msg not in reported:
                 reported.add(msg)
@@ -131,7 +150,7 @@ class RecordSimulation(OperatorWithOptions):
 
     def modal(self, context, event):
         if event.type == "ESC":
-            return self._on_cancelled(context)
+            return self._on_cancelled(context, "Esc pressed.")
 
         if event.type == "TIMER":
             return self._on_timer(context, event)
@@ -167,7 +186,9 @@ class RecordSimulation(OperatorWithOptions):
             return
 
         yield "attaching", 60
-        self._attach(context)
+        with bpx.maintained_time(context), bpx.Timing() as t:
+            context.scene.frame_set(start)
+            self._attach(context)
 
         if self.attach_only:
             yield "finished", 100
@@ -204,6 +225,16 @@ class RecordSimulation(OperatorWithOptions):
         self._temporary_constraints.clear()
 
     def _on_timer(self, context, event):
+        if LICENCE_STATE:
+            state = LICENCE_STATE.copy().pop()
+            detail = {
+                "expired": "Your licence of Ragdoll has expired",
+                "aupExpired": "This version of Ragdoll is newer than your AUP",
+                "recordingLimit": "Licence recording limit was reached",
+            }.get(state, "Unknown state: %s" % state)
+
+            return self._on_cancelled(context, "%s." % detail)
+
         try:
             msg, progress = next(self._runner_it)
 
@@ -217,12 +248,23 @@ class RecordSimulation(OperatorWithOptions):
         else:
             return {"RUNNING_MODAL"}
 
-        self.report({"ERROR"}, "Failed, this is a bug.")
-        return self._on_cancelled(context)
+        unknown_reason = ""
+        return self._on_cancelled(context, unknown_reason)
 
-    def _on_cancelled(self, context):
+    def _on_cancelled(self, context, reason):
+        if reason:
+            level = "WARNING"
+        else:
+            level = "ERROR"
+            reason = (
+                "\n"
+                "This is a bug, please see console output "
+                "(Window > Toggle System Console)."
+            )
+
         duration = self._step_timer.time_duration
-        self.report({"WARNING"}, "Interrupted after %.2f s" % duration)
+        self.report({level}, "Interrupted after %.2f s, because: %s"
+                    % (duration, reason))
 
         context.window_manager.event_timer_remove(self._step_timer)
         return {"CANCELLED"}
@@ -388,13 +430,6 @@ class RecordSimulation(OperatorWithOptions):
             for axis in dst.unlocked_location():
                 location_dofs[dst].add(axis)
 
-        # Always bake to XYZ Euler
-        for dst in marker_to_dst.values():
-            if isinstance(dst, bpx.BpxBone):
-                dst.pose_bone().rotation_mode = "XYZ"
-            else:
-                dst.handle().rotation_mode = "XYZ"
-
         with bpx.maintained_time(context):
             for frame in frames:
                 context.scene.frame_set(frame)
@@ -428,10 +463,21 @@ class RecordSimulation(OperatorWithOptions):
                         else:
                             handle.matrix_basis = matrix
 
-                    for axis in rotation_dofs[dst]:
-                        handle.keyframe_insert("rotation_euler",
-                                               frame=frame,
-                                               index=axis)
+                    if handle.rotation_mode == "AXIS_ANGLE":
+                        handle.keyframe_insert("rotation_axis_angle",
+                                               frame=frame)
+                    elif handle.rotation_mode == "QUATERNION":
+                        handle.keyframe_insert("rotation_quaternion",
+                                               frame=frame)
+
+                    # Euler angles can be individually locked,
+                    # which is only really relevant to Euler and not
+                    # axis-angle or quaternions.
+                    else:
+                        for axis in rotation_dofs[dst]:
+                            handle.keyframe_insert("rotation_euler",
+                                                   frame=frame,
+                                                   index=axis)
 
                     for axis in location_dofs[dst]:
                         handle.keyframe_insert("location",
@@ -491,8 +537,7 @@ def _find_markers(solver):
 
 
 def _find_destinations(markers: list):
-    # destinations = collections.defaultdict(list)
-    destinations = {}  # TODO: There can be multiple destinations
+    destinations = {}
     for marker in markers:
         for dst in marker["destinationTransforms"]:
             try:

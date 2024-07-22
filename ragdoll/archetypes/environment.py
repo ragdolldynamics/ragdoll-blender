@@ -46,6 +46,9 @@ def evaluate_start_state(entity):
     xobj = bpx.alias(entity)
     xsource = xobj["inputGeometry"].read(False)
 
+    if not xsource:
+        return
+
     # Keep this up to date
     xsource.data["entity"] = entity
 

@@ -29,8 +29,7 @@ class AssignEnvironment(OperatorWithOptions):
 
         # Only meshes are supported
         meshes = list(filter(
-            lambda s: isinstance(
-                s.handle().data, bpy.types.Mesh), selection)
+            lambda s: isinstance(s.handle().data, bpy.types.Mesh), selection)
         )
 
         return meshes
@@ -53,21 +52,14 @@ class AssignEnvironment(OperatorWithOptions):
             solver = scene.find_or_create_current_solver()
 
             if not solver:
-                # TODO: Consider "Auto Create Ground" flag
                 # TODO: Consider "Auto Compute Scene Scale" flag
                 bpy.ops.ragdoll.create_solver()
-
-                if self.create_ground:
-                    bpy.ops.ragdoll.create_ground()
-
                 new_solver = True
 
             solver = scene.find_or_create_current_solver()
             assert solver
 
             environments = []
-            last_index = len(selection) - 1
-
             for index, xobj in enumerate(selection):
                 existing_marker = scene.object_to_marker(xobj)
 

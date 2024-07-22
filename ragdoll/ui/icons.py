@@ -36,7 +36,7 @@ def install():
 
 def uninstall():
     try:
-        bpy.utils.previews.remove(fname_to_icon_id)
+        bpy.utils.previews.remove(_collection)
     except AttributeError:
         pass
 

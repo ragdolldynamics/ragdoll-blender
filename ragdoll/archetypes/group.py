@@ -15,6 +15,9 @@ class RdGroupPropertyGroup(scene.PropertyGroup):
             xobj = bpx.alias(entity)
 
             for member in xobj["members"].read():
+                if not member.object:  # Could be disconnected
+                    continue
+
                 xmember = bpx.BpxType(member.object)
 
                 member_entity = xmember.data["entity"]

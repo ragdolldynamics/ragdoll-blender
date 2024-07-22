@@ -1,0 +1,1 @@
+Primarily property panels and anything else that is strictly user interface (UI) related.

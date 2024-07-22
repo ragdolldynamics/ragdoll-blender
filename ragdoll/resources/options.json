@@ -1,14 +1,5 @@
 {
     "option": {
-
-        "#": "----------------",
-        "#": " Solver         ",
-        "#": "----------------",
-
-        "#": "----------------",
-        "#": " Markers        ",
-        "#": "----------------",
-
         "markersAssignAlwaysInvokeDialog": {
             "name": "markers_assign_always_invoke_dialog",
             "label": "Always Show Dialog",
@@ -273,11 +264,143 @@
         },
 
         "#": "----------------",
+        "#": " Rendering ",
+        "#": "----------------",
+
+
+        "lightSize": {
+            "name": "lightSize",
+            "label": "Light Size",
+            "type": "Integer",
+            "default": 8,
+            "monitor": true,
+            "min": 1,
+            "max": 16,
+            "help": ""
+        },
+        "lightFollowsCamera": {
+            "name": "lightFollowsCamera",
+            "label": "Light Follows Camera",
+            "type": "Boolean",
+            "default": true,
+            "monitor": true,
+            "help": ""
+        },
+        "lightAmbientStrength": {
+            "name": "lightAmbientStrength",
+            "label": "Light Ambient Strength",
+            "type": "Float",
+            "default": 0.6,
+            "monitor": true,
+            "min": 0.0,
+            "max": 1.0,
+            "stepsize": 0.01,
+            "help": ""
+        },
+        "lightSpecularStrength": {
+            "name": "lightSpecularStrength",
+            "label": "Light Specular Strength",
+            "type": "Float",
+            "default": 0.05,
+            "monitor": true,
+            "min": 0.0,
+            "max": 1.0,
+            "stepsize": 0.01,
+            "help": ""
+        },
+        "lightDiffuseStrength": {
+            "name": "lightDiffuseStrength",
+            "label": "Light Diffuse Strength",
+            "type": "Float",
+            "default": 0.5,
+            "monitor": true,
+            "min": 0.0,
+            "max": 1.0,
+            "stepsize": 0.01,
+            "help": ""
+        },
+        "smoothShading": {
+            "name": "smoothShading",
+            "label": "Smooth Shading",
+            "type": "Boolean",
+            "default": true,
+            "monitor": true,
+            "help": ""
+        },
+        "drawShadows": {
+            "name": "drawShadows",
+            "label": "Draw Shadows",
+            "type": "Boolean",
+            "default": false,
+            "monitor": true,
+            "help": ""
+        },
+        "shadowMapResolution": {
+            "name": "shadowMapResolution",
+            "label": "Shadow Map Resolution",
+            "type": "Enum",
+            "default": 2,
+            "monitor": true,
+            "items": ["1024", "2048", "4096"],
+            "help": ""
+        },
+        "shadowPenumbraFade": {
+            "name": "shadowPenumbraFade",
+            "label": "Shadow Penumbra Fade",
+            "type": "Float",
+            "default": 0.1,
+            "monitor": true,
+            "min": 0.0,
+            "max": 1.0,
+            "stepsize": 0.01,
+            "help": ""
+        },
+        "shadowSceneScale": {
+            "name": "shadowSceneScale",
+            "label": "Shadow Scene Scale",
+            "type": "Float",
+            "default": 0.1,
+            "monitor": true,
+            "min": 0.0001,
+            "max": 1000.0,
+            "stepsize": 0.01,
+            "help": ""
+        },
+        "shadowMaxSampleCount": {
+            "name": "shadowMaxSampleCount",
+            "label": "Shadow Max Sample Count",
+            "type": "Enum",
+            "default": 0,
+            "monitor": true,
+            "items": ["32", "64", "128", "256", "512"],
+            "help": ""
+        },
+        "drawMotionBlur": {
+            "name": "drawMotionBlur",
+            "label": "Draw Motion Blur",
+            "type": "Boolean",
+            "default": false,
+            "monitor": true,
+            "help": "Apply motionblur to moving Markers"
+        },
+        "motionBlurScale": {
+            "name": "motionBlurScale",
+            "label": "Motion Blur Scale",
+            "type": "Float",
+            "default": 0.5,
+            "monitor": true,
+            "min": 0.0,
+            "max": 2.0,
+            "help": "Control the amount of blurring, values between 0-1 are most stable."
+        },
+
+        "#": "----------------",
         "#": " Import/Export  ",
         "#": "----------------",
 
         "exportPath": {
             "name": "export_path",
+            "label": "Export_path",
             "label": "Filename",
             "type": "Path",
             "subtype": "FILE_PATH",
@@ -291,8 +414,9 @@
         "__order__": [
             "Global",
             "Manipulator",
-            "Import / Export",
+            "Import/Export",
             "Marker",
+            "Rendering",
             "Recording"
         ],
         "Global": [
@@ -313,6 +437,21 @@
             "markers_assign_solver",
             "markers_assign_group"
         ],
+        "Rendering": [
+            "lightSize",
+            "lightFollowsCamera",
+            "lightAmbientStrength",
+            "lightSpecularStrength",
+            "lightDiffuseStrength",
+            "smoothShading",
+            "drawShadows",
+            "shadowMapResolution",
+            "shadowPenumbraFade",
+            "shadowSceneScale",
+            "shadowMaxSampleCount",
+            "drawMotionBlur",
+            "motionBlurScale"
+        ],
         "Recording": [
             "markers_record_always_invoke_dialog",
             "markers_record_range",
@@ -324,7 +463,7 @@
             "markers_record_initial_key",
             "markers_record_kinematic"
         ],
-        "Import / Export": [
+        "Import/Export": [
             "export_path"
         ]
     }

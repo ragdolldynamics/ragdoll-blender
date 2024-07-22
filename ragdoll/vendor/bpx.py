@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import os
-import sys
-import time
 import uuid
 import typing
 import logging
@@ -12,14 +9,19 @@ import collections
 import functools
 import ctypes  # For SessionUuid
 import itertools
-import math
+
+# Avoid accidental access from user
+import os as _os
+import sys as _sys
+import math as _math
+import time as _time
 
 import bpy
 import bmesh
 import mathutils
 
 # Convenience
-bpx = sys.modules[__name__]
+bpx = _sys.modules[__name__]
 
 # Expose native mathutils types
 Vector = mathutils.Vector
@@ -29,9 +31,9 @@ Euler = mathutils.Euler
 Quaternion = mathutils.Quaternion
 
 # Expose native math types
-radians = math.radians
-degrees = math.degrees
-pi = math.pi
+radians = _math.radians
+degrees = _math.degrees
+pi = _math.pi
 
 e_cube = 2
 e_empty = 11
@@ -78,13 +80,14 @@ class _Timing:
 
 
 # Developer flags
-BPX_DEVELOPER = bool(os.getenv("BPX_DEVELOPER", False))
+BPX_DEVELOPER = bool(_os.getenv("BPX_DEVELOPER", False))
 USE_PROFILING = BPX_DEVELOPER
 USE_ORDERED_SELECTION = True
 
 # End-user constants
 BLENDER_3 = bpy.app.version[0] == 3
 BLENDER_4 = bpy.app.version[0] == 4
+BLENDER_41_plus = BLENDER_4 and bpy.app.version[1] >= 1
 
 #
 # Internal state below, do not access internally or externally
@@ -99,7 +102,15 @@ _SUSPENDED_CALLBACKS = False
 
 # Maintain a list of selected objects and bones, in the order of selection
 _ORDERED_SELECTION = []
-_LAST_SELECTION = []
+
+# A list of selected editable bone names, selection order not aware
+_SELECTED_EDIT_BONES = []
+
+# A list of armature names that are being edited in EDIT_ARMATURE mode
+_EDITING_ARMATURES = []
+
+# For preventing BpxProperty access data with outdated bone index
+_REARRANGED_BONES = set()
 
 # Alternative name for a given BpxType
 _ALIASES = {}
@@ -112,6 +123,10 @@ _LOG = logging.getLogger("bpx")
 
 # Is the file opened in a test environment?
 _BACKGROUND = False
+
+# See `select()` and `_depsgraph_object_mode_handler()`.
+_BPX_SELECTED = False
+_BPX_SELECTION = []
 
 # Handle writing to bpxProperties.bpxId from another
 # thread or restricted context, such as during rendering
@@ -167,12 +182,12 @@ SelectionOrder = True
 @contextlib.contextmanager
 def timing(name, verbose=False):
     t = _Timing()
-    t0 = time.perf_counter()
+    t0 = _time.perf_counter()
 
     try:
         yield t
     finally:
-        t1 = time.perf_counter()
+        t1 = _time.perf_counter()
         t.duration = (t1 - t0) * 1000
 
         if verbose:
@@ -186,10 +201,10 @@ def cumulative_timing(name):
     timing = _TIMINGS[name]
 
     try:
-        t0 = time.perf_counter()
+        t0 = _time.perf_counter()
         yield timing
     finally:
-        t1 = time.perf_counter()
+        t1 = _time.perf_counter()
         duration = (t1 - t0) * 1000  # milliseconds
         timing.duration += duration
         timing.count += 1
@@ -204,12 +219,12 @@ def cumulative_timing(name):
 def with_timing(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        t0 = time.perf_counter()
+        t0 = _time.perf_counter()
 
         try:
             return func(*args, **kwargs)
         finally:
-            t1 = time.perf_counter()
+            t1 = _time.perf_counter()
             duration = t1 - t0
             info("%s.%s in %.2fms" % (
                 func.__module__, func.__name__, duration * 1000
@@ -237,12 +252,12 @@ def with_cumulative_timing(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        t0 = time.perf_counter()
+        t0 = _time.perf_counter()
 
         try:
             return func(*args, **kwargs)
         finally:
-            t1 = time.perf_counter()
+            t1 = _time.perf_counter()
             duration = (t1 - t0) * 1000  # milliseconds
             key = func.__module__.rsplit(".", 1)[-1]  # lib.vendor.bpx -> bpx
             key += "." + func.__name__
@@ -337,7 +352,7 @@ def report_cumulative_timings():
 
 class Timing:
     def __init__(self):
-        self._t0 = time.perf_counter()
+        self._t0 = _time.perf_counter()
 
     @property
     def s(self):
@@ -351,7 +366,7 @@ class Timing:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        t1 = time.perf_counter()
+        t1 = _time.perf_counter()
         self._seconds = t1 - self._t0
 
 
@@ -712,8 +727,9 @@ class BpxProperty(metaclass=SingletonProperty):
         # Determine whether property is driven
         handle = xobj._handle
         anim = handle.animation_data
+        action = getattr(handle.animation_data, "action", None)
 
-        if anim:
+        if anim and action:
             action = handle.animation_data.action
             kwargs = {}
 
@@ -820,13 +836,15 @@ class BpxProperty(metaclass=SingletonProperty):
         elif isinstance(value, BpxBone):
             value = value.bone()
 
+        # Write
         if isinstance(value, dict):
-            for key, value in value.items():
-                if isinstance(value, BpxType):
-                    value = value.handle()
+            for key, val in value.items():
+                if isinstance(val, BpxType):
+                    val = val.handle()
 
                 ptr = getattr(group, self._name)
-                setattr(ptr, key, value)
+                setattr(ptr, key, val)
+
         else:
             if self._index is not None:
                 self[self._index] = value
@@ -875,19 +893,34 @@ class BpxProperty(metaclass=SingletonProperty):
 
         # Is this a { armature: boneid } pair?
         if isinstance(value, bpy.types.PropertyGroup):
-            pg = value
 
-            if hasattr(value, "object") and hasattr(value, "boneidx"):
-                obj = pg.object
-                is_armature = obj and isinstance(obj.data, bpy.types.Armature)
-
+            if (
+                    hasattr(value, "object") and
+                    hasattr(value, "boneid") and
+                    hasattr(value, "boneidx")
+            ):
+                # NOTE: The attribute spec in above condition is not defined
+                # in bpx, but in ragdoll as `RdPointerPropertyGroup_*`. Like
+                # Blender's `PointerProperty`, but also for pointing bones.
+                pg = value
                 value = None
                 xobj = None
 
+                obj = pg.object
+                is_armature = obj and isinstance(obj.data, bpy.types.Armature)
+
                 if is_armature:
                     bone = None
-                    if pg.boneidx is not None:
-                        bone = find_bone_by_index(obj, pg.boneidx)
+                    good_index = (pg.boneidx is not None and
+                                  pg.boneid is not None and
+                                  pg.boneid not in _REARRANGED_BONES)
+
+                    if good_index:
+                        # NOTE: Here we verify bone found by index (boneidx)
+                        # with `boneid`. This prevents property that associates
+                        # with a deleted bone, gets resurrected after scene
+                        # reopen.
+                        bone = find_bone_by_index(obj, pg.boneidx, pg.boneid)
 
                     if bone is None and pg.boneid is not None:
                         bone = find_bone_by_uuid(obj, pg.boneid)
@@ -1121,7 +1154,7 @@ class SessionUuid:
         if isinstance(obj, bpy.types.Bone):
             return cls._get_from_bone(obj)
 
-        elif isinstance(obj, bpy.types.Object):
+        elif isinstance(obj, (bpy.types.Object, bpy.types.Armature)):
             return cls._get_from_object(obj)
 
         else:
@@ -1130,6 +1163,9 @@ class SessionUuid:
     @classmethod
     def _get_from_object(cls, obj):
         """Get the session_uuid for a Blender-native `obj`"""
+        if BLENDER_41_plus:
+            return obj.session_uid
+
         ptr = obj.as_pointer()
         ptr = ctypes.cast(ptr, ctypes.POINTER(_LIBRARY))
 
@@ -1141,8 +1177,8 @@ class SessionUuid:
         return ptr.contents.id.session_uuid
 
     @classmethod
-    def _get_from_bone(cls, bone):
-        """Get pair of {session_uui, boneid}
+    def _get_from_bone(cls, bone: bpy.types.Bone):
+        """Get a pair of {object uuid, boneid}
 
         Blender does not provide a session_uuid for bones (correct m
         if I'm wrong) and so instead we consider a combination of
@@ -1150,27 +1186,96 @@ class SessionUuid:
 
         """
 
-        if not _bpxid(bone):
-            _make_bpxid(bone)
-
+        # Get object uuid from armature
         armature = bone.id_data
         assert isinstance(armature, bpy.types.Armature)
 
-        for obj in bpy.data.objects:
-            if not isinstance(obj.data, bpy.types.Armature):
-                continue
+        armature_uuid = cls._get_from_object(armature)
+        obj = ArmatureCache.get(armature_uuid)
 
-            if obj.data is armature:
-                break
+        if obj is None:
+            for obj in bpy.data.objects:
+                if not isinstance(obj.data, bpy.types.Armature):
+                    continue
 
-        else:
-            raise ValueError(
-                "Object for armature data '%s' did not exist, this is a bug"
-                % armature
-            )
+                if obj.data is armature:
+                    ArmatureCache.store(armature_uuid, obj)
+                    break
+
+            else:
+                raise ValueError(
+                    "Object for armature data '%s' did not exist, "
+                    "this is a bug"
+                    % armature
+                )
 
         uuid = cls._get_from_object(obj)
+
+        # Ensure bone id (bpxId)
+        if not _bpxid(bone):
+            bone = _get_persistence_bone(obj, bone)
+            _make_bpxid(bone)
+
         return (uuid, bone.bpxProperties.bpxId)
+
+
+def _get_persistence_bone(obj: bpy.types.Object, bone: bpy.types.Bone):
+    """Returns a bone that can preserve bpxId throughout file save and load
+
+    If the armature `obj` is not from a linked library, `bone` returned as is.
+    If the armature `obj` is from a linked library, an overridable bone is
+    returned.
+
+    """
+
+    assert isinstance(obj.data, bpy.types.Armature)
+
+    if obj.override_library and not obj.data.override_library:
+        # The armature object is linked from other scene file and has
+        # library override created ready for posing, and the underlying
+        # armature data is not overridable.
+
+        # We need to create override library for Armature datablock.
+        # Here is why:
+        #
+        # This is the data structure of a rig that you can observe in
+        # outliner.
+        #
+        #     * linkedRig (Object)
+        #       > Pose
+        #         - pose-bones...
+        #       > linkedRig (Armature)
+        #         - bones...
+        #
+        # When the linkedRig (Object) has override library created by user,
+        # it enables animator to make changes on Pose, tweaking pose-bones,
+        # and those changes can be preserved to the next time scene file gets
+        # reopened. Because Pose data belongs to the Object datablock that has
+        # been overridden. That does not include underlying Armature. So any
+        # change that made on bones (not pose-bones) will not be saved.
+        #
+        # Because of that, and since in `bpx` we write `bpxId` to bone which
+        # has to be preserved as well, we must make an override library for
+        # the Armature datablock.
+
+        # Create armature override
+        obj.data = obj.data.override_create()
+        obj.data.override_library.is_system_override = True
+        # NOTE:
+        # Python API somehow does not provide any obvious way for specifying
+        # the "Hierarchy Root ID" (`ID.override_library.hierarchy_root`) when
+        # creating override library.
+        # The only way I found is by `bpy.ops.outliner.liboverride_operation`
+        # which is an outliner operator that we cannot use because it requires
+        # outliner UI context.
+        # Unsure if this "flaw" (if it is) affects anything.
+
+        info("Override library created: %s" % obj.data)
+
+        # Get overridable bone
+        bone = obj.data.bones[bone.name]
+
+    return bone
 
 
 @with_cumulative_timing
@@ -1181,11 +1286,6 @@ def _get_uuid(obj):
     repeat when duplicating an object.
 
     """
-
-    assert isinstance(obj, (bpy.types.Object,
-                            bpy.types.Bone,
-                            bpy.types.PoseBone)), (
-        "%s was not an Object or Bone" % obj)
 
     if isinstance(obj, bpy.types.PoseBone):
         obj = obj.bone
@@ -1298,12 +1398,22 @@ class BpxType(metaclass=SingletonType):
     def attr(self, name):
         return self._handle[name]
 
-    def type(self):
+    def type(self) -> str:
         # Cache for performance, this can never change
         if not self._bpxtype and self.is_valid():
             self._bpxtype = _bpxtype(self._handle)
 
-        return self._bpxtype
+        return self._bpxtype or ""
+
+    def scenes(self):
+        """Return which scenes, if any, this object is a member of"""
+        scenes = set()
+
+        for scene in bpy.data.scenes:
+            if self.name() in scene.objects:
+                scenes.add(scene.name)
+
+        return scenes
 
     @property
     def data(self):
@@ -1350,15 +1460,25 @@ class BpxType(metaclass=SingletonType):
         return self._last_name
 
     def path(self):
-        """Return name including all parents, separated by forward slash"""
-        names = [self.name()]
-        current = self.parent()
+        """Return unique identifier for this type
 
-        while current:
-            names.append(current.name())
-            current = self.parent()
+        For an object, it is simply the name, since no two objects
+        can have the same name.
 
-        return "/".join(names.reversed())
+        For bones, we include the armature, since no two bones in
+        the same armature can have the same name.
+
+        """
+
+        armature_bone_separator = "|"
+
+        if isinstance(self, BpxBone):
+            return armature_bone_separator.join(
+                [self._handle.name, self.name()]
+            )
+
+        else:
+            return self.name()
 
     @_persistent
     def lineage(self):
@@ -1477,7 +1597,7 @@ def _is_valid(xobj):
 
     # An object can be valid, but not be present in the active scene
     if not valid:
-        debug("Not valid, beause bad %s" % xobj._handle)
+        debug("Not valid, because bad %s" % xobj._handle)
         return False
 
     # Blender allows access to objects via bpy.data.objects[""]
@@ -1639,7 +1759,8 @@ class BpxBone(BpxType):
         self._boneidx = armature.data.bones.keys().index(self._last_name)
 
     def __hash__(self):
-        return int(self._boneid)
+        """Make unique ID taking armature into consideration"""
+        return int(self._uuid) + int(self._boneid)
 
     def boneid(self) -> str:
         return self._boneid
@@ -1649,13 +1770,19 @@ class BpxBone(BpxType):
         if self._boneidx is None or not cached:
             armature = self._handle.data
             bones = armature.bones.keys()
+
             self._boneidx = bones.index(self.name())
+            try:
+                _REARRANGED_BONES.remove(self._boneid)
+            except KeyError:
+                pass
 
         return self._boneidx
 
     def rearrange(self):
         """Indicate that this object has changed its location in hierarchy"""
         self._boneidx = None
+        _REARRANGED_BONES.add(self._boneid)
 
     @_persistent
     def name(self) -> str:
@@ -1663,12 +1790,12 @@ class BpxBone(BpxType):
             self._last_name = self.bone().name
         return self._last_name
 
-    def type(self):
+    def type(self) -> str:
         # Cache for performance, this can never change
         if not self._bpxtype and self.is_valid():
             self._bpxtype = _bpxtype(self._bone)
 
-        return self._bpxtype
+        return self._bpxtype or ""
 
     @_persistent
     def visible(self):
@@ -1733,6 +1860,7 @@ def _remove(xobj, notify=True):
 
     # These can no longer be trusted
     ObjectCache.clear()
+    ArmatureCache.clear()
     BoneCache.clear()
 
     xobj._removed = True
@@ -1760,6 +1888,7 @@ def _unremove(xobj, notify=True):
         return
 
     ObjectCache.clear()
+    ArmatureCache.clear()
     BoneCache.clear()
 
     xobj._removed = False
@@ -1829,21 +1958,27 @@ def _bpxid(obj):
 
 
 @with_cumulative_timing
-def _bpxtype(obj):
+def _bpxtype(obj) -> str | None:
     assert isinstance(obj, (bpy.types.Object, bpy.types.Bone)), (
         "%s was not a bpy.types.Object or .Bone" % obj
     )
 
     typ = None
-    if hasattr(obj, "bpxProperties"):
-        typ = obj.bpxProperties.bpxType
+
+    try:
+        if hasattr(obj, "bpxProperties"):
+            typ = obj.bpxProperties.bpxType
+
+    except ReferenceError:
+        pass
 
     # TEMP: Backwards compatibility
     if not typ:
         try:
             typ = obj["bpxType"]
             obj.bpxProperties.bpxType = typ
-        except KeyError:
+
+        except (KeyError, ReferenceError):
             pass
 
     return typ
@@ -1910,10 +2045,13 @@ def is_object_valid(obj):
 def _clear_all_caches():
     """Internal, to erase everything we think we know"""
     ObjectCache.clear()
+    ArmatureCache.clear()
     BoneCache.clear()
 
     _ORDERED_SELECTION[:] = []
-    _LAST_SELECTION[:] = []
+    _SELECTED_EDIT_BONES[:] = []
+    _EDITING_ARMATURES.clear()
+    _REARRANGED_BONES.clear()
 
     SingletonType._key_to_instance.clear()
     SingletonType._instance_to_key.clear()
@@ -1950,7 +2088,15 @@ class ObjectCache:
 
     @classmethod
     def is_cached(cls, obj):
-        return id(obj) in cls._cached_objects
+        return obj in cls._cached_objects
+
+
+class ArmatureCache(ObjectCache):
+    """Optimise `find_bone_by_index` by storing Armature -> Object references
+    """
+
+    _uuid_to_object = dict()
+    _cached_objects = set()
 
 
 class BoneCache:
@@ -2024,6 +2170,16 @@ def find_object_by_uuid(bpxid):
 
 @with_cumulative_timing
 def find_bone_by_uuid(armature, boneid):
+    """Find a bone by comparing `boneid` of each bone in the given armature
+
+    Args:
+        armature (bpy.types.Object): Armature object
+        boneid (str): Bone UUID string
+
+    Returns:
+        bpy.types.Bone or None
+
+    """
     assert isinstance(armature, bpy.types.Object), (
         "%s was not a bpy.types.Armature" % armature
     )
@@ -2071,16 +2227,20 @@ def find_bone_by_index(armature, boneidx, boneid=None, name=None):
 
     The `name` argument can be used to verify that the name of the
     discovered bone indeed refers to the correct bone. However, this
-    can *also* give falst positives if a bone was both removed and
+    can *also* give false positives if a bone was both removed and
     renamed prior to being re-evaluated.
 
     Thus, the `boneid` argument can be used to doubly-verify that
     this indeed is the bone.
 
     Arguments:
-        armature (bpy.types.Armature): Armature containing the bone
+        armature (bpy.types.Object): Armature object
         boneidx (int): Index of bone
+        boneid (str, optional): Bone UUID, for verification
         name (str, optional): Verify bone name at this index
+
+    Returns:
+        bpy.types.Bone or None
 
     """
 
@@ -2095,12 +2255,16 @@ def find_bone_by_index(armature, boneidx, boneid=None, name=None):
         # May be uninitialised
         return None
 
-    bone = armature.data.bones[boneidx]
+    try:
+        bone = armature.data.bones[boneidx]
+    except IndexError:
+        return None  # Leaf bone deleted
 
     if name and bone.name != name:
         return None
 
-    if boneid and boneid:
+    # Verify
+    if boneid:
         aid, bid = _get_uuid(bone)
         if bid != boneid:
             return None
@@ -2322,10 +2486,22 @@ def create_constraint(xobj, type):
 
 
 def create_collection(name, parent=None):
-    parent = parent or bpy.context.scene.collection
-    collection = bpy.data.collections.new(name)
-    parent.children.link(collection)
-    return collection
+    if parent:
+        col = parent
+
+        if col.override_library:
+            old = col
+            col = bpy.context.scene.collection
+            warning(
+                "Parent collection %r is overridden and cannot link new "
+                "child collection. Using %r instead." % (old.name, col.name)
+            )
+    else:
+        col = bpy.context.scene.collection
+
+    col_new = bpy.data.collections.new(name)
+    col.children.link(col_new)
+    return col_new
 
 
 def poly_cube(name, extents=None, offset=None):
@@ -2414,11 +2590,16 @@ def delete(*xtypes):
 
     if xobjects:
         select(*xobjects)
-        bpy.ops.object.delete(
-            # Also remove from bpy.data.objects
-            use_global=True,
 
-            confirm=False)
+        # The evaluation behaves a bit different when deleting via script,
+        # so as `depsgraph_update_post` callback, it gets called differently.
+        # Here we back up our selection for later process.
+        _backup = _ORDERED_SELECTION[:]
+        bpy.ops.object.delete(
+            use_global=True,  # Also remove from bpy.data.objects
+            confirm=False,
+        )
+        _ORDERED_SELECTION[:] = _backup
 
         # Deleting via Python does not let our operator handler
         # spot the operator, since it didn't come from the window manager
@@ -2480,8 +2661,20 @@ def _create_empty_object(type):
 def set_active(object_, link_collection=False):
     if isinstance(object_, BpxType):
         object_ = object_.handle()
+
     if link_collection:
-        bpy.context.collection.objects.link(object_)
+        col = bpy.context.collection
+
+        if col.override_library:
+            old = col
+            col = bpy.context.scene.collection
+            warning(
+                "Context active collection %r is overridden and cannot link "
+                "any object. Using %r instead." % (old.name, col.name)
+            )
+
+        col.objects.link(object_)
+
     bpy.context.view_layer.objects.active = object_
 
 
@@ -2561,6 +2754,24 @@ def select(*items: str | BpxType | list[str | BpxType], append=False):
 
     """
 
+    # `_BPX_SELECTED` and `_BPX_SELECTION` are workaround for a case that,
+    # when Ragdoll assigning marker with "Create Ground" enabled, and Blender
+    # viewport has mesh visibility disabled, ground marker creation failed.
+    #
+    # For some reason, `context.selected_objects` can end up empty when meshes
+    # are not visible and the selection update were made in another operator.
+    #
+    # In Ragdoll's case, the ground mesh was created in `ragdoll.create_ground`
+    # operator, and `bpx.select()` selects it. Next, `ragdoll.assign_markers`
+    # operator gets called, but its `poll()` failed due to selection is empty.
+    #
+    # So here we memorize the selection ourselves and take them in following
+    # depsgraph evaluation call.
+    #
+    global _BPX_SELECTED
+    _BPX_SELECTED = True
+    _BPX_SELECTION.clear()
+
     if not append:
         deselect_all()
 
@@ -2615,7 +2826,7 @@ def select(*items: str | BpxType | list[str | BpxType], append=False):
         if last_item is not None:
             bpy.context.view_layer.objects.active = last_item
 
-        _ORDERED_SELECTION[:] = list(map(BpxType, items))
+        _BPX_SELECTION[:] = list(map(BpxType, items))
 
     elif current_mode == PoseMode:
         if active_object.type != "ARMATURE":
@@ -2632,7 +2843,7 @@ def select(*items: str | BpxType | list[str | BpxType], append=False):
                 # Make last given the active one
                 active_object.data.bones.active = bone
 
-        _ORDERED_SELECTION[:] = list(map(BpxBone, items))
+        _BPX_SELECTION[:] = list(map(BpxBone, items))
 
 
 def deselect_all():
@@ -2677,7 +2888,16 @@ def rename(xobj, name):
 def reparent(child, parent):
     if isinstance(child, BpxObject):
         if isinstance(parent, bpy.types.Collection):
-            parent.objects.link(child)
+            # The `parent` is being designated, so that would be an error if
+            # it is overridden.
+            if parent.override_library:
+                raise RuntimeError(
+                    "Parent collection %r is overridden, can not link any "
+                    "object." % parent.name
+                )
+            else:
+                parent.objects.link(child)
+
         elif isinstance(parent, BpxObject):
             child.handle().parent = parent.handle()
         else:
@@ -2687,12 +2907,30 @@ def reparent(child, parent):
 
 
 def link(xobj, collection, move=True):
+    # The `collection` is being designated, so that would be an error if
+    # it is overridden.
+    if collection.override_library:
+        raise RuntimeError(
+            "Collection %r is overridden, can not link any object."
+            % collection.name
+        )
+
     if isinstance(xobj, BpxObject):
+        obj = xobj.handle()
+
         if move:
             for existing_collection in xobj.collections():
-                existing_collection.objects.unlink(xobj.handle())
 
-        collection.objects.link(xobj.handle())
+                if existing_collection.override_library:
+                    warning(
+                        "Collection %r is overridden, %r can not be unlinked "
+                        "from it." % (existing_collection.name, obj.name)
+                    )
+                    continue
+
+                existing_collection.objects.unlink(obj)
+
+        collection.objects.link(obj)
 
     else:
         raise TypeError("%s was unsupported" % xobj)
@@ -2822,6 +3060,25 @@ def make_human(name=""):
             leg.add("L_hand_tip", (0, 5.5, 2))
 
     return armature
+
+
+def duplicate_bones(armature, bones):
+    for bone in armature.edit_bones:
+        bone.select = False
+        bone.select_head = False
+        bone.select_tail = False
+
+    prev_len = len(armature.edit_bones)
+    for bone in bones:
+        bone.select = True
+        bone.select_tail = True
+        if bone.parent:
+            bone.parent.select_tail = True
+        else:
+            bone.select_head = True
+
+    bpy.ops.armature.duplicate()
+    return armature.edit_bones[prev_len:]
 
 
 def print_console(text):
@@ -3022,6 +3279,9 @@ def selection_iter(type=None,
     for sel in selected:
         if sel._removed:
             continue
+        # NOTE: The integrity of `sel._handle` is not guaranteed to be valid
+        #   if any invalid driver exists in scene which affects evaluation.
+        #   See NOTE in `_on_selection_updated()`.
 
         if mode == PoseMode and not isinstance(sel, BpxBone):
             continue
@@ -3057,6 +3317,8 @@ def is_type(sel, type: tuple | list | str | typing.Type):
         >>> is_type(xobj, "myCustomType")
         False
         >>> obj.bpxProperties.bpxType = "myCustomType"
+        >>> is_type(xobj.handle(), "myCustomType")
+        True
         >>> is_type(xobj, "myCustomType")
         True
 
@@ -3077,7 +3339,9 @@ def is_type(sel, type: tuple | list | str | typing.Type):
                     return True
 
             elif isinstance(sel, BpxType):
-                if sel._bpxtype == typ:
+                # `BpxType._bpxtype` could be empty string or None if
+                # `BpxType.type()` was never called.
+                if (sel._bpxtype or sel.type()) == typ:
                     return True
 
         # Support for query via actual Python type
@@ -3141,6 +3405,7 @@ def dirty_all():
         obj.dirty()
 
     ObjectCache.clear()
+    ArmatureCache.clear()
     BoneCache.clear()
 
 
@@ -3168,8 +3433,6 @@ def _post_undo_redo(scene, *_):
 @with_cumulative_timing
 def _on_selection_updated(scene, new_selection):
     deselected = not new_selection
-
-    _LAST_SELECTION[:] = _ORDERED_SELECTION
 
     if deselected:
         selection_changed = len(_ORDERED_SELECTION) > 0
@@ -3203,6 +3466,19 @@ def _on_selection_updated(scene, new_selection):
             sel = BpxType(sel)
 
             if sel not in _ORDERED_SELECTION:
+                # NOTE: When scene contains invalid driver, depsgraph update
+                # might get affected, and leads to invalid object selection.
+                #
+                # For example, while selecting pose bones, undo last selection
+                # change and then continue selecting, the last selected bone's
+                # `BpxBone._handle` can be an invalid object.
+                #
+                # At the moment we don't have any fix implemented, as it can
+                # be self-healed in next selection read. In Ragdoll's case,
+                # the first selection read that has invalid `BpxBone._handle`
+                # happens in operator's `poll()` which is harmless. And this
+                # bug rarely occurs so let's just keep this in mind for now.
+
                 _ORDERED_SELECTION.append(sel)
                 selection_changed = True
 
@@ -3214,12 +3490,29 @@ def _on_selection_updated(scene, new_selection):
                 traceback.print_exc()
 
 
+def _on_edit_armature_mode_entered():
+    _EDITING_ARMATURES.clear()
+    _SELECTED_EDIT_BONES.clear()
+
+    for obj in bpy.context.scene.objects:
+        if obj.type == "ARMATURE" and obj.mode == "EDIT":
+
+            _EDITING_ARMATURES.append(obj.name)
+            # PoseBone selection and EditBone selection are synced, so we
+            # update selection immediately when in armature edit mode.
+            _SELECTED_EDIT_BONES.extend(
+                (bn.id_data.name, bn.name) for bn in obj.data.bones
+                if bn.select
+            )
+
+
 def _on_mode_changed(previous, current):
     # Leaving Edit Mode may cause bones to invalidate, regardless
     # of whether or not they were edited.
     if previous == EditArmatureMode:
         dirty_all()
         rearrange_all()
+        _on_possible_bone_duplicated()
 
     for handler in handlers["mode_changed"]:
         handler(previous, current)
@@ -3230,6 +3523,10 @@ def _on_mode_changed(previous, current):
 def _post_depsgraph_changed(scene, depsgraph):
     """Manage ordered selection"""
 
+    # Detect object/bone deletion
+    if hasattr(bpy.context, "window_manager"):
+        _depsgraph_operator_handler(scene)
+
     last_mode = getattr(_post_depsgraph_changed, "last_mode", None)
     current_mode = bpy.context.mode
 
@@ -3238,6 +3535,10 @@ def _post_depsgraph_changed(scene, depsgraph):
 
     if current_mode == PoseMode:
         _depsgraph_pose_mode_handler(scene, depsgraph)
+
+    if current_mode == EditArmatureMode:
+        _on_edit_armature_mode_entered()
+        _depsgraph_edit_armature_mode_handler(scene, depsgraph)
 
     if current_mode != last_mode:
         _on_mode_changed(last_mode, current_mode)
@@ -3249,21 +3550,11 @@ def _post_depsgraph_changed(scene, depsgraph):
             except Exception:
                 traceback.print_exc()
 
-    if hasattr(bpy.context, "window_manager"):
-        _depsgraph_operator_handler(scene)
-
     setattr(_post_depsgraph_changed, "last_mode", current_mode)
 
 
 def _depsgraph_operator_handler(scene):
-    """Update bpxId when duplication happens
-
-    This function assumes that the only way an object can be duplicated
-    is via the duplicate operator(s).
-
-    Not true? Please submit a pull-request
-
-    """
+    """Reacts to changes that made by operators"""
 
     try:
         last_op = bpy.context.window_manager.operators[-1]
@@ -3287,8 +3578,14 @@ def _depsgraph_operator_handler(scene):
         if last_op.bl_idname == "ARMATURE_OT_delete":
             _on_operator_bone_delete(scene)
 
+        if last_op.bl_idname == "ARMATURE_OT_dissolve":
+            _on_operator_bone_dissolve(scene)
+
         # The session_uuid is unique for duplicated objects, the bpxId is not
         if not _USE_SESSION_UUID:
+            # If not using session_uuid, we assume that the only way an object
+            # can be duplicated is via the duplicate operator(s), and update
+            # bpxId accordingly.
             if last_op.bl_idname in ("OBJECT_OT_duplicate",
                                      "OBJECT_OT_duplicate_move"):
                 _on_operator_duplicate(scene)
@@ -3304,14 +3601,54 @@ def _on_operator_object_delete(scene):
     the scene graph being updated was the objects that was deleted.
 
     """
-
-    for sel in _LAST_SELECTION:
+    for sel in _ORDERED_SELECTION:
         _remove(sel)
 
 
 def _on_operator_bone_delete(scene):
-    for sel in _LAST_SELECTION:
-        _remove(sel)
+
+    for armature_name, bone_name in _SELECTED_EDIT_BONES:
+        try:
+            armature = bpy.data.armatures[armature_name]
+        except KeyError:
+            warning("Armature %r not exists, this is a bug." % armature_name)
+            continue
+
+        try:
+            bone = armature.bones[bone_name]
+        except KeyError:
+            # Deleting an edit-bone that was created in current EDIT_ARMATURE
+            # mode session and not yet materialized into actual bone.
+            continue
+
+        xbone = BpxBone(bone)
+        _remove(xbone)
+
+
+def _on_operator_bone_dissolve(scene):
+    dissolved = set()
+
+    for armature_name, bone_name in _SELECTED_EDIT_BONES:
+        try:
+            armature = bpy.data.armatures[armature_name]
+        except KeyError:
+            warning("Armature %r not exists, this is a bug." % armature_name)
+            continue
+
+        try:
+            bone = armature.bones[bone_name]
+        except KeyError:
+            # Deleting an edit-bone that was created in current EDIT_ARMATURE
+            # mode session and not yet materialized into actual bone.
+            continue
+
+        dissolved.add(bone)
+        if len(bone.children) == 1:
+            dissolved.update(bone.children)
+
+    for bone in dissolved:
+        xbone = BpxBone(bone)
+        _remove(xbone)
 
 
 def _on_operator_duplicate(scene):
@@ -3332,6 +3669,7 @@ def _on_operator_duplicate(scene):
 
 
 def _depsgraph_object_mode_handler(scene, depsgraph):
+    global _BPX_SELECTED
     selection_invalidated = False
 
     for update in depsgraph.updates:
@@ -3346,13 +3684,19 @@ def _depsgraph_object_mode_handler(scene, depsgraph):
             break
 
     if selection_invalidated:
-        # Blender doesn't provide ordered selection,
-        # so we have to handle this by ourselves
-        selected = bpy.context.selected_objects
+        if _BPX_SELECTED:
+            _BPX_SELECTED = False
+            selected = _BPX_SELECTION[:]
+        else:
+            # Blender doesn't provide ordered selection,
+            # so we have to handle this by ourselves
+            selected = bpy.context.selected_objects
+
         _on_selection_updated(scene, selected)
 
 
 def _depsgraph_pose_mode_handler(scene, depsgraph):
+    global _BPX_SELECTED
     selection_invalidated = False
 
     for update in depsgraph.updates:
@@ -3367,12 +3711,82 @@ def _depsgraph_pose_mode_handler(scene, depsgraph):
             break
 
     if selection_invalidated:
-        # Blender doesn't provide ordered selection,
-        # It seems that bone selection is ordered by hierarchy, not
-        # selected order, so we track the order by ourselves.
-        selected = bpy.context.selected_pose_bones or []
-        selected += bpy.context.selected_objects or []
+        if _BPX_SELECTED:
+            _BPX_SELECTED = False
+            selected = _BPX_SELECTION[:]
+        else:
+            # Blender doesn't provide ordered selection,
+            # It seems that bone selection is ordered by hierarchy, not
+            # selected order, so we track the order by ourselves.
+            selected = bpy.context.selected_pose_bones or []
+            selected += bpy.context.selected_objects or []
+
         _on_selection_updated(scene, selected)
+
+
+def _depsgraph_edit_armature_mode_handler(scene, depsgraph):
+    possibly_duplicated = False
+    selection_invalidated = False
+
+    for update in depsgraph.updates:
+        is_relevant = not any((
+            update.is_updated_geometry,
+            update.is_updated_transform,
+            update.is_updated_shading
+        ))
+
+        if is_relevant:
+            # On selection change, update.id would be Armature type.
+            # On bone Duplicate/Extrude Op, update.id would be Object type.
+            possibly_duplicated = isinstance(update.id, bpy.types.Object)
+            selection_invalidated = True
+            break
+
+    # Note: Deselecting editable bones (mouse click on anywhere but bones)
+    # does not trigger depsgraph update.
+    if selection_invalidated:
+        _SELECTED_EDIT_BONES[:] = [
+            (bone.id_data.name, bone.name)
+            for bone in bpy.context.selected_editable_bones or []
+        ]
+
+        # If the operation was Extrude, the selection would be empty.
+        # If the operation was Duplicate, at least one bone is selected.
+        if possibly_duplicated and _SELECTED_EDIT_BONES:
+            # Note: For bones, there is `ARMATURE_OT_duplicate_move`, but that
+            # operation history doesn't always in `window_manager.operators`
+            # list, when e.g. duplicating a newly selected edit-bone.
+            #
+            # Then, why not use `_SELECTED_EDIT_BONES` as duplicated bones?
+            # Because we cannot do anything at this moment, as newly created
+            # or duplicated edit-bone does not have actual bone data until
+            # the EDIT_ARMATURE mode session ended. Also, edit-bone name and
+            # index will both not be the same after leaving edit mode.
+            #
+            setattr(_on_possible_bone_duplicated, "duplicated", True)
+
+
+def _on_possible_bone_duplicated():
+    # When an edit-bone is duplicated, original bone data like properties gets
+    # copied as well. That includes our bpxId.
+    # Here we check if `BpxBone` instance that spawned from a pose-bone is
+    # resolving to itself. If not, then its bpxId must be duplicated.
+
+    duplicated = getattr(_on_possible_bone_duplicated, "duplicated", None)
+    if duplicated:
+        setattr(_on_possible_bone_duplicated, "duplicated", False)
+
+        for obj_name in _EDITING_ARMATURES:
+            try:
+                obj = bpy.data.objects[obj_name]
+            except KeyError:
+                warning("Armature %r not exists, this is a bug." % obj_name)
+                continue
+
+            for pbone in obj.pose.bones:
+                xbone = BpxBone(pbone)
+                if xbone._pose_bone != pbone:
+                    pbone.bone.bpxProperties.bpxId = ""
 
 
 @bpy.app.handlers.persistent
@@ -3387,8 +3801,9 @@ def _post_file_open(*_args):
         selected = bpy.context.view_layer.objects.selected
         _on_selection_updated(bpy.context.scene, selected or [])
 
-    # Trigger the create_object handler
-    for obj in bpy.data.objects:
+    for obj in bpy.context.scene.objects:
+
+        # Trigger the create_object handler
         BpxObject(obj)
 
         if isinstance(obj.data, bpy.types.Armature):
@@ -3410,6 +3825,12 @@ def _on_save_pre(*args):
     may not want to perform some action while this is happening.
 
     """
+    if bpy.context.mode == EditArmatureMode:
+        warning("Changing mode from 'EDIT_ARMATURE' to 'POSE' for bone data "
+                "integrity in bpx.")
+        # Without this, bone duplication will not be handled if scene was
+        # saved in armature edit mode.
+        set_mode(PoseMode)
 
     bpy.app.handlers.depsgraph_update_post.remove(_post_depsgraph_changed)
 
@@ -3426,12 +3847,14 @@ class BpxProperties(bpy.types.PropertyGroup):
         default="",
         description="Get properties from the property group of this name",
         options={"HIDDEN"},
+        override={"LIBRARY_OVERRIDABLE"},
     )
     bpxId: bpy.props.StringProperty(
         name="bpxId",
         default="",
         description="A unique ID",
         options={"HIDDEN"},
+        override={"LIBRARY_OVERRIDABLE"},
     )
 
 
@@ -3452,7 +3875,10 @@ class BpxProperties(bpy.types.PropertyGroup):
 # /64612#issuecomment-447694
 bpy.utils.register_class(BpxProperties)
 for typ in (bpy.types.Object, bpy.types.Bone):
-    typ.bpxProperties = bpy.props.PointerProperty(type=BpxProperties)
+    typ.bpxProperties = bpy.props.PointerProperty(
+        type=BpxProperties,
+        override={"LIBRARY_OVERRIDABLE"},
+    )
 
 
 def install():
@@ -3565,23 +3991,53 @@ def test_is_alive(_):
     assert_true(xobj.is_valid())
     assert_true(xobj.is_alive())
 
+    # TODO: This test is now failing because of commit d132c6ab
+    #   The behavior of delete is different between background and GUI mode.
     bpx.delete(xobj)
 
     assert_true(not xobj.is_alive())
 
 
+def test_duplicating_bones(_):
+    new()
+
+    armature = bpx.create_object(bpx.e_armature_empty, name="chain")
+
+    with bpx.edit_mode(armature):
+        with bpx.Chain() as c:
+            c.add("a", (0, 0, 2))
+            c.add("b", (0, 2, 2))
+            c.add("c", (0, 4, 2))
+            c.add("d", (0, 6, 2))
+            c.add("_", (0, 8, 2))
+
+    armature_h = armature.handle()
+
+    xbones = list(map(bpx.BpxBone, armature_h.data.bones))
+    bpxIds = set(x._bone.bpxProperties.bpxId for x in xbones)
+    assert_equal(len(bpxIds), len(xbones))
+
+    with bpx.edit_mode(armature):
+        old_bones = armature_h.data.edit_bones[1:2]
+        new_bones = duplicate_bones(armature_h.data, old_bones)
+        for bone in new_bones:
+            bone.translate(Vector((2, 0, 0)))
+
+    xbones = list(map(bpx.BpxBone, armature_h.data.bones))
+    bpxIds = set(x._bone.bpxProperties.bpxId for x in xbones)
+    assert_equal(len(bpxIds), len(xbones))
+
+
 def is_background():
-    import sys
-    return "--background" in sys.argv
+    return "--background" in _sys.argv
 
 
 if __name__ == "__main__":
-    import sys
     import unittest
     import doctest
 
     # For familiarity
-    bpx = sys.modules[__name__]
+    bpx = _sys.modules[__name__]
 
     _BACKGROUND = True
 

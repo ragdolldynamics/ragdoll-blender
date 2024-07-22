@@ -91,17 +91,17 @@ class AssignMarkers(OperatorWithOptions):
             max_length = max(lengths)
             tolerance = max_length / 50.0
 
-            next_pos = selection[-1].position()
-            for tm in reversed(list(selection[:-1])):
-                pos = tm.position()
+            prev_pos = selection[0].position()
+            for index, tm in enumerate(list(selection[1:])):
+                next_pos = tm.position()
 
-                if bpx.is_equivalent(pos, next_pos, tolerance):
+                if bpx.is_equivalent(prev_pos, next_pos, tolerance):
                     self.report(
                         {"WARNING"}, "Identical transform '%s' skipped" % tm
                     )
-                    selection.remove(tm)
+                    selection.pop(index)
 
-                next_pos = pos
+                prev_pos = next_pos
 
         # Compute a scale suitable for multiple selection
         overall_draw_scale = 1.0
@@ -132,7 +132,7 @@ class AssignMarkers(OperatorWithOptions):
                 new_solver = True
 
             solver = scene.find_or_create_current_solver()
-            assert solver
+            assert solver, "No solver was found, this is a bug"
 
             markers = []
             new_markers = []
@@ -235,7 +235,7 @@ class AssignMarkers(OperatorWithOptions):
                 solver["members"].append({"object": marker.handle()})
 
         if not new_markers:
-            self.report({"WARNING"}, "No markers were created")
+            self.report({"WARNING"}, "No new markers were created")
             return {"CANCELLED"}
 
         # Automatically group assignments greater than 1

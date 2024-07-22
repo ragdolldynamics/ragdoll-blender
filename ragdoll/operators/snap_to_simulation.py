@@ -1,9 +1,4 @@
 import bpy
-import traceback
-import collections
-
-import ragdollc
-from ragdollc import registry
 
 from . import OperatorWithOptions
 from .. import commands
@@ -32,6 +27,15 @@ class SnapToSimulation(OperatorWithOptions):
 
     icon = "PROP_ON"
 
+    keyframe: bpy.props.BoolProperty(
+        name="Keyframe",
+        description=(
+            "Snap and also keyframe the destinations"
+        ),
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+
     @classmethod
     def poll(cls, context):
         if not bpx.ls(type="rdSolver"):
@@ -42,10 +46,11 @@ class SnapToSimulation(OperatorWithOptions):
 
     def execute(self, context):
         solvers = bpx.selection(type="rdSolver") or bpx.ls(type="rdSolver")
+        opts = {"keyframe": self.keyframe}
 
         with bpx.timing("snap_to_simulation") as t:
             for solver in solvers:
-                commands.snap_to_simulation(solver)
+                commands.snap_to_simulation(solver, opts)
 
         self.report({"INFO"}, "Finished in %.2f ms" % t.duration)
         return {"FINISHED"}

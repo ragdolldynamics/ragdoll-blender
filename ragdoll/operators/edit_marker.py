@@ -338,6 +338,35 @@ class Untarget(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class MergeSolvers(bpy.types.Operator):
+    bl_idname = "ragdoll.merge_solvers"
+    bl_label = "Merge Solvers"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Merges two solvers into one"
+    icon = "PIVOT_INDIVIDUAL"
+
+    @classmethod
+    def poll(cls, context):
+        selection = bpx.selection(type="rdSolver")
+
+        if len(selection) != 2:
+            cls.poll_message_set("Select two solvers to merge")
+            return False
+
+        return True
+
+    def execute(self, context):
+        solvers = bpx.selection(type="rdSolver")
+        print("Merging %s" % solvers)
+        commands.merge_solvers(*solvers)
+
+        self.report({"INFO"}, "Successfully merged %s -> %s" % (
+            solvers[0], solvers[1])
+        )
+        tag_redraw(context.screen)
+        return {"FINISHED"}
+
+
 class Reassign(bpy.types.Operator):
     bl_idname = "ragdoll.reassign"
     bl_label = "Reassign"
@@ -589,6 +618,7 @@ def install():
     bpy.utils.register_class(Retarget)
     bpy.utils.register_class(Reassign)
     bpy.utils.register_class(Unparent)
+    bpy.utils.register_class(MergeSolvers)
     bpy.utils.register_class(RetargetPicker)
     bpy.utils.register_class(RetargetPickerInternal)
     bpy.utils.register_class(Untarget)
@@ -604,6 +634,7 @@ def uninstall():
     bpy.utils.unregister_class(Retarget)
     bpy.utils.unregister_class(Reassign)
     bpy.utils.unregister_class(Unparent)
+    bpy.utils.unregister_class(MergeSolvers)
     bpy.utils.unregister_class(RetargetPicker)
     bpy.utils.unregister_class(RetargetPickerInternal)
     bpy.utils.unregister_class(Untarget)

@@ -1,3 +1,5 @@
+import bpy
+
 import ragdollc
 from ragdollc import (
     registry,
@@ -14,6 +16,10 @@ class RdSolverPropertyGroup(scene.PropertyGroup):
 
     @classmethod
     def on_property_changed(cls, entity, name):
+        if name in ("startTime", "startTimeCustom"):
+            # Trigger any range-change callbacks
+            bpy.context.scene.frame_end = bpy.context.scene.frame_end
+
         if name.startswith("members"):
             # Add members immediately, ahead of evaluating solver,
             # and then again, when Solver requests to evaluate.
@@ -168,12 +174,12 @@ def evaluate_enabled(xobj):
     Removed.value = not xobj.is_alive()
 
     # Markers also need their source transform
-    if not Removed.value and xobj.type() in "rdMarker":
+    if not Removed.value and xobj.type() == "rdMarker":
         xsource = xobj["sourceTransform"].read(animated=False)
         Removed.value = not xsource or not xsource.is_alive()
 
     # The environment cannot exist without its input geometry
-    if not Removed.value and xobj.type() in "rdEnvironment":
+    if not Removed.value and xobj.type() == "rdEnvironment":
         xsource = xobj["inputGeometry"].read(animated=False)
         Removed.value = not xsource or not xsource.is_alive()
 
@@ -183,6 +189,8 @@ def evaluate_enabled(xobj):
 @bpx.with_cumulative_timing
 def evaluate_members(entity):
     xobj = bpx.alias(entity)
+
+    solver_scenes = xobj.scenes()
 
     # Remove all Group and Scene members, such that only
     # those that are alive are added below
@@ -194,6 +202,15 @@ def evaluate_members(entity):
             continue
 
         xmember = bpx.BpxType(member.object)
+
+        # Ensure member is part of at least one scene
+        marker_scenes = xmember.scenes()
+        if not marker_scenes:
+            continue
+
+        # Ensure they are the same
+        if marker_scenes != solver_scenes:
+            continue
 
         if not evaluate_enabled(xmember):
             continue

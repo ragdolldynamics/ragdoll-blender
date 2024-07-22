@@ -1,6 +1,8 @@
+import re
 import os
 import json
 import copy
+import ragdollc
 
 import bpy
 
@@ -20,10 +22,47 @@ def reinterpret(fname, **opts):
     return loader.reinterpret()
 
 
-def export(fname, **opts):
-    loader = Loader(opts)
-    loader.read(fname)
-    return loader.export()
+def export(fname=None, data=None, opts=None):
+    """Export everything Ragdoll-related into `fname`
+
+    Arguments:
+        fname (str, optional): Write to this file,
+            or console if no file is provided
+        data (dict, optional): Export this dictionary instead
+
+    Returns:
+        data (dict): Exported data as a dictionary
+
+    """
+
+    opts = dict({
+        "animation": False,
+        "simulation": False,
+    }, **(opts or {}))
+
+    initial_frame = bpy.context.scene.frame_current
+
+    # Ensure the solver is initialised
+    for solver in bpx.ls(type="rdSolver"):
+        entity = solver.data["entity"]
+        Time = ragdollc.registry.get("TimeComponent", entity)
+        bpy.context.scene.frame_set(Time.startFrame)
+        ragdollc.scene.evaluate(entity)
+
+    data = json.loads(ragdollc.registry.dump())
+    data = make_backwards_compatible(data)
+    data = patch_source_destination_paths(data)
+
+    if fname and not fname.endswith(".rag"):
+        fname += ".rag"
+
+    if fname is not None:
+        with open(fname, "w") as f:
+            json.dump(data, f, indent=4, sort_keys=True)
+
+    bpy.context.scene.frame_set(initial_frame)
+
+    return data
 
 
 class Entity(int):
@@ -185,6 +224,70 @@ class Registry(object):
     def components(self, entity):
         """Return *all* components for `entity`"""
         return self._dump["entities"][entity]["components"]
+
+
+def patch_source_destination_paths(json):
+    """For backwards compatibility, remove characters unsupported by Maya"""
+
+    def clean(text):
+        return re.sub(r'[^a-zA-Z0-9]', '_', text)
+
+    for entity, value in json["entities"].items():
+        if "MarkerUIComponent" in value["components"]:
+            marker_ui = value["components"]["MarkerUIComponent"]
+            members = marker_ui["members"]
+            members["sourceTransform"] = clean(members["sourceTransform"])
+
+            for index, name in enumerate(members["destinationTransforms"][:]):
+                members["destinationTransforms"][index] = clean(name)
+
+        if "NameComponent" in value["components"]:
+            Name = value["components"]["NameComponent"]
+            Name["members"]["value"] = clean(Name["members"]["value"])
+
+    return json
+
+
+def make_backwards_compatible(json):
+    """2024.04.09 removed the "absolute" subentity"""
+
+    # We'll add a mock entity, carrying a mock component
+    # such that exports can be imported/loaded in Maya
+    absolute_entity = 0xffff0000
+
+    # Find an unoccupied ID
+    while str(absolute_entity) in json["entities"]:
+        absolute_entity += 1
+
+    json["entities"][str(absolute_entity)] = {
+        "components": {
+            "NameComponent": {
+                "members": {
+                    "path": "",
+                    "shortestPath": "",
+                    "value": "Backwards Compatibility"
+                },
+                "type": "NameComponent"
+            },
+            "DriveComponent": {
+                "members": {},
+                "type": "DriveComponent"
+            }
+        },
+        "id": absolute_entity
+    }
+
+    for entity, value in json["entities"].items():
+        for key, comp in value["components"].items():
+            if key == "SubEntitiesComponent":
+                comp["members"].update({
+                    "absolute": {
+                        "type": "Entity",
+                        "value": absolute_entity
+                    }
+                })
+
+    return json
 
 
 def _name(path, level=1):
@@ -632,6 +735,7 @@ class Loader(object):
         # One Armature to rule them all
         armature = bpx.create_object(bpx.e_armature_empty, name=armature_name)
         armature.handle().data.display_type = "STICK"
+
         # Update armature name
         armature_name = armature.name()
         self._opts["armature"] = armature_name
@@ -1352,19 +1456,6 @@ class Loader(object):
         # These are exported as Quaternion
         rotation = Desc["rotation"].to_euler("XYZ")
         _write(marker, "shapeRotation", rotation)
-
-        # These were added to the .rag file after 2022.02.02
-        try:
-            _write(marker, "driveLinearAmount", Drive["linearAmount"])
-            _write(marker, "driveAngularAmountTwist",
-                   Drive["angularAmountTwist"])
-            _write(marker, "driveAngularAmountSwing",
-                   Drive["angularAmountSwing"])
-            _write(marker, "ignoreGravity", Rigid["ignoreGravity"])
-            _write(marker, "ignoreFields", Rigid["ignoreFields"])
-            _write(marker, "driveSpringType", Drive["acceleration"])
-        except KeyError:
-            pass
 
         # Added in 2022.03.14
         try:
